@@ -6,6 +6,7 @@
   "scripts": {
     "test": "vitest --typecheck --coverage",
     "format": "prettier --check . --ignore-path .gitignore",
+    "type-check": "tsc --noEmit",
     "lint": "eslint ."
   },
   "devDependencies": {
