@@ -4,7 +4,7 @@
   "packageManager": "pnpm@9.12.3",
   "description": "An unofficial Typesense client for Node.js written in TypeScript, designed to be fully typesafe",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest --typecheck --coverage",
     "format": "prettier --check . --ignore-path .gitignore",
     "lint": "eslint ."
   },
@@ -12,9 +12,11 @@
     "@eslint/js": "^9.13.0",
     "@ianvs/prettier-plugin-sort-imports": "^4.3.1",
     "@types/eslint__js": "^8.42.3",
+    "@vitest/coverage-v8": "2.1.4",
     "eslint": "^9.13.0",
     "prettier": "^3.3.3",
     "typescript": "^5.6.3",
-    "typescript-eslint": "^8.12.1"
+    "typescript-eslint": "^8.12.1",
+    "vitest": "^2.1.4"
   }
 }
