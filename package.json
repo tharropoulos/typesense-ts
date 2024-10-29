@@ -1,0 +1,11 @@
+{
+  "name": "typesense-ts",
+  "version": "0.1.0",
+  "packageManager": "pnpm@9.12.3",
+  "description": "An unofficial Typesense client for Node.js written in TypeScript, designed to be fully typesafe",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+  }
+}
