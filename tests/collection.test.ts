@@ -1,10 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-import type { InferNativeType } from "../src/collection";
-
-import { collection } from "../src/collection";
 import { describe, expectTypeOf, it } from "vitest";
+
+import type { InferNativeType } from "../src/collection";
+import { collection } from "../src/collection";
 
 describe("collection tests", () => {
   it("can't have an optional default sorting field", () => {
