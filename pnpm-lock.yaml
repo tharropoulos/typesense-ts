@@ -38,6 +38,9 @@ importers:
       vitest:
         specifier: ^2.1.4
         version: 2.1.4(@types/node@22.8.4)
+      vitest-fetch-mock:
+        specifier: ^0.4.1
+        version: 0.4.1(vitest@2.1.4(@types/node@22.8.4))
 
 packages:
 
@@ -1193,6 +1196,12 @@ packages:
         optional: true
       terser:
         optional: true
+
+  vitest-fetch-mock@0.4.1:
+    resolution: {integrity: sha512-Y6VEV2AgJps1t9NUdhID/vUwarAuhOkPHShfoEruIlQr5+O31hgJ4YmZpU8kVWD3KQjEyZqPeMibWehd7rMq+A==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      vitest: '>=2.0.0'
 
   vitest@2.1.4:
     resolution: {integrity: sha512-eDjxbVAJw1UJJCHr5xr/xM86Zx+YxIEXGAR+bmnEID7z9qWfoxpHw0zdobz+TQAFOLT+nEXz3+gx6nUJ7RgmlQ==}
@@ -2357,6 +2366,10 @@ snapshots:
     optionalDependencies:
       '@types/node': 22.8.4
       fsevents: 2.3.3
+
+  vitest-fetch-mock@0.4.1(vitest@2.1.4(@types/node@22.8.4)):
+    dependencies:
+      vitest: 2.1.4(@types/node@22.8.4)
 
   vitest@2.1.4(@types/node@22.8.4):
     dependencies:
