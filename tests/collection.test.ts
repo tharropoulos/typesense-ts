@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { describe, expectTypeOf, it } from "vitest";
+import type { InferNativeType } from "@/collection/base";
 
-import type { InferNativeType } from "../src/collection";
-import { collection } from "../src/collection";
+import { collection } from "@/collection/base";
+import { describe, expectTypeOf, it } from "vitest";
 
 describe("collection tests", () => {
   it("can't have an optional default sorting field", () => {
