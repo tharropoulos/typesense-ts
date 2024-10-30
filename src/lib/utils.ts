@@ -13,4 +13,8 @@ type OmitDefaultSortingField<T> = Omit<T, "default_sorting_field">;
  */
 type Recurse<T> = T extends infer R ? R : never;
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export type { OmitDefaultSortingField, Recurse };
+
+export { sleep };
