@@ -1,18 +1,13 @@
-import { describe, expect, it } from "vitest";
+import type { NearestNode, NodeConfiguration, TsNode, UrlString } from "@/node";
 
-import type {
-  NearestNode,
-  Node,
-  NodeConfiguration,
-  UrlString,
-} from "../src/config/node";
 import {
   getNextNode,
   handleNodeType,
   initializeNodes,
   nodeDueForHealthcheck,
   setNodeHealth,
-} from "../src/config/node";
+} from "@/node";
+import { describe, expect, it } from "vitest";
 
 describe("type tests", () => {
   describe("NodeConfiguration", () => {
@@ -272,7 +267,7 @@ describe("function tests", () => {
   });
   describe("nodeDueForHealthcheck", () => {
     it("should return true if the last access timestamp is over the interval", () => {
-      const node: Node = {
+      const node: TsNode = {
         isHealthy: true,
         index: 0,
         lastAccessTimestamp: Date.now() - 1200,
@@ -285,7 +280,7 @@ describe("function tests", () => {
       );
     });
     it("should return false if the last access timestamp is under the interval", () => {
-      const node: Node = {
+      const node: TsNode = {
         isHealthy: true,
         index: 0,
         lastAccessTimestamp: Date.now(),
@@ -299,7 +294,7 @@ describe("function tests", () => {
     });
   });
   describe("setNodeHealth", () => {
-    const createNode = (index: number, isHealthy: boolean): Node => ({
+    const createNode = (index: number, isHealthy: boolean): TsNode => ({
       isHealthy,
       index,
       lastAccessTimestamp: Date.now() - 5000, // Set initial timestamp 5 seconds in the past
@@ -407,7 +402,7 @@ describe("function tests", () => {
     });
   });
   describe("getNextNode", () => {
-    const createNode = (index: number, isHealthy: boolean): Node => ({
+    const createNode = (index: number, isHealthy: boolean): TsNode => ({
       isHealthy,
       index,
       lastAccessTimestamp: Date.now(),
@@ -487,7 +482,7 @@ describe("function tests", () => {
     });
 
     it("should find next node due for healthcheck in round robin order", () => {
-      const nodes: [Node, Node, Node] = [
+      const nodes: [TsNode, TsNode, TsNode] = [
         createNode(0, false),
         createNode(1, false),
         createNode(2, false),
@@ -545,7 +540,7 @@ describe("function tests", () => {
       // Create array with undefined value to simulate missing node
       const nodes = [
         createNode(0, false),
-        undefined as unknown as Node,
+        undefined as unknown as TsNode,
         createNode(2, false),
       ];
 
@@ -562,7 +557,7 @@ describe("function tests", () => {
       // Create array with undefined value at the next index position
       const nodes = [
         createNode(0, false),
-        undefined as unknown as Node,
+        undefined as unknown as TsNode,
         createNode(2, false),
       ];
 
@@ -579,7 +574,7 @@ describe("function tests", () => {
       // Create array with null value
       const nodes = [
         createNode(0, false),
-        null as unknown as Node,
+        null as unknown as TsNode,
         createNode(2, false),
       ];
 
@@ -595,7 +590,7 @@ describe("function tests", () => {
     // Test that sparse arrays are handled correctly
     it("should throw when encountering sparse array", () => {
       // Create sparse array
-      const nodes = Array(3) as Node[];
+      const nodes = Array(3) as TsNode[];
       nodes[0] = createNode(0, false);
       nodes[2] = createNode(2, false);
       // nodes[1] is undefined
@@ -635,9 +630,9 @@ describe("function tests", () => {
       // 3. The next node in rotation is missing
       const nodes = [
         createNode(0, false),
-        undefined as unknown as Node, // This will be our nextIndex when starting from index 0
+        undefined as unknown as TsNode, // This will be our nextIndex when starting from index 0
         createNode(2, false),
-      ] as Node[];
+      ] as TsNode[];
 
       // Set all valid nodes to have recent timestamps
       nodes.forEach((node) => {
@@ -659,9 +654,9 @@ describe("function tests", () => {
       // Create an array where a healthy node exists, but it's after the missing next node
       const nodes = [
         createNode(0, false),
-        undefined as unknown as Node, // This will be our nextIndex
+        undefined as unknown as TsNode, // This will be our nextIndex
         createNode(2, true), // This is healthy but comes after the missing node
-      ] as Node[];
+      ] as TsNode[];
 
       expect(() =>
         getNextNode({

@@ -24,10 +24,10 @@ type NodeConfiguration =
 interface BaseNode {
   isHealthy: boolean;
   lastAccessTimestamp: number;
-  url: string;
+  url: UrlString;
 }
 
-interface Node extends BaseNode {
+interface TsNode extends BaseNode {
   index: number;
 }
 
@@ -56,11 +56,11 @@ function getNextNode({
   healthcheckIntervalSeconds,
   currentIndex = 0,
 }: {
-  nodes: BaseNode[];
+  nodes: TsNode[];
   nearestNode?: NearestNode;
   healthcheckIntervalSeconds: number;
   currentIndex?: number;
-}): { node: BaseNode; nextIndex: number } {
+}): { node: TsNode | NearestNode; nextIndex: number } {
   if (!nodes.length) {
     throw new Error("No nodes available");
   }
@@ -140,7 +140,7 @@ function initializeNodes({
   nodes: NodeConfiguration[];
   nearestNode?: NodeConfiguration;
 }): {
-  nodes: Node[];
+  nodes: TsNode[];
   nearestNode?: NearestNode;
 } {
   const initializedNodes = nodes.map((node, index) => {
@@ -164,7 +164,7 @@ function initializeNodes({
   };
 }
 
-export type { NodeConfiguration, Node, NearestNode, UrlString };
+export type { NodeConfiguration, TsNode, NearestNode, UrlString };
 
 export {
   nodeDueForHealthcheck,
