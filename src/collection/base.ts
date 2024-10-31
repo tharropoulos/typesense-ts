@@ -189,7 +189,14 @@ type EmbeddingField<
     model_config: {
       model_name: string;
       api_key?: string;
+      indexing_prefix?: string;
+      query_prefix?: string;
       url?: string;
+      access_token?: string;
+      refresh_token?: string;
+      client_id?: string;
+      client_secret?: string;
+      project_id?: string;
     };
   };
 };
