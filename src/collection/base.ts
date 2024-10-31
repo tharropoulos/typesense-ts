@@ -183,9 +183,7 @@ type ReferenceField<T extends string = string> = BaseField<T> & {
 type EmbeddingField<
   T extends string = string,
   K extends string = string,
-> = BaseField<T> & {
-  type: "float[]";
-  reference?: never;
+> = FloatArrayField<T> & {
   embed: {
     from: K[];
     model_config: {
@@ -194,6 +192,17 @@ type EmbeddingField<
       url?: string;
     };
   };
+};
+
+type FloatArrayField<T extends string = string> = BaseField<T> & {
+  type: "float[]";
+  reference?: never;
+  num_dim?: number;
+  hnsw_params?: {
+    ef_construction?: number;
+    M?: number;
+  };
+  vec_dist?: "cosine" | "ip";
 };
 
 /**
@@ -205,7 +214,8 @@ type EmbeddingField<
 type CollectionField<T extends string = string, K extends string = string> =
   | RegularField<T>
   | EmbeddingField<T, K>
-  | ReferenceField<T>;
+  | ReferenceField<T>
+  | FloatArrayField<T>;
 
 type EmbeddableFieldNames<T extends CollectionField<string, string>[]> = {
   [K in T[number]["name"]]: Extract<T[number], { name: K }> extends infer Field
