@@ -310,8 +310,12 @@ type CollectionCreate<
 > = EnforceNestedFields<Fields> & {
   fields: {
     [K in keyof Fields]: Fields[K] extends EmbeddingField<infer T, string>
-      ? EmbeddingField<T, EmbeddableFieldNames<Fields>>
-      : Fields[K];
+      ? {
+          [P in keyof Fields[K]]: Fields[K][P];
+        } & EmbeddingField<T, EmbeddableFieldNames<Fields>>
+      : {
+          [P in keyof Fields[K]]: Fields[K][P];
+        };
   };
   name: Name;
   default_sorting_field?: DefaultSortingFields<Fields> | undefined;
@@ -399,15 +403,25 @@ type Collection = CollectionCreate<CollectionField<string, string>[], string>;
  * @returns The collection schema.
  */
 function collection<
-  Fields extends CollectionField<string, string>[],
-  Name extends string,
+  const Fields extends CollectionField<string, string>[],
+  const Name extends string,
 >(
-  schema: CollectionCreate<InferTupleNames<Fields>, Name>,
-): CollectionCreate<EnforceUniqueFieldNames<InferTupleNames<Fields>>, Name> {
-  return schema as CollectionCreate<
-    EnforceUniqueFieldNames<InferTupleNames<Fields>>,
-    Name
-  >;
+  schema: Omit<
+    CollectionCreate<Fields, Name, DefaultSort>,
+    "fields" 
+  > & {
+    name: Name;
+    fields: {
+      [K in keyof Fields]: Fields[K] extends EmbeddingField
+        ? EmbeddingField<
+            Fields[K]["name"],
+            Extract<Fields[number], { type: "string" }>["name"]
+          >
+        : Fields[K];
+    };
+  },
+): CollectionCreate<Fields, Name> {
+  return schema as CollectionCreate<Fields, Name>;
 }
 
 /**
