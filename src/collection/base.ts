@@ -376,13 +376,13 @@ type WhichObjectFields<Fields extends CollectionField<string, string>[]> = {
  * A type that enforces unique field names in a collection schema.
  * @template T The collection's fields.
  */
-type EnforceUniqueFieldNames<T extends CollectionField<string, string>[]> =
+type _EnforceUniqueFieldNames<T extends CollectionField<string, string>[]> =
   T extends [infer First, ...infer Rest]
     ? First extends CollectionField<string, string>
       ? Rest extends CollectionField<string, string>[]
         ? First["name"] extends Rest[number]["name"]
           ? ["Error: Duplicate field name found", First["name"]]
-          : [First, ...EnforceUniqueFieldNames<Rest>]
+          : [First, ..._EnforceUniqueFieldNames<Rest>]
         : [First]
       : never
     : [];
@@ -391,7 +391,7 @@ type EnforceUniqueFieldNames<T extends CollectionField<string, string>[]> =
  * A type that infers the names of the fields in a collection schema.
  * @template T The collection's fields.
  */
-type InferTupleNames<T extends CollectionField<string, string>[]> = {
+type _InferTupleNames<T extends CollectionField<string, string>[]> = {
   [K in keyof T]: T[K] & { name: NonNullable<T[K]["name"] & string> };
 };
 
