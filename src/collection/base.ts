@@ -297,6 +297,7 @@ type EnforceKeyAndNameMatch<
 > = {
   [K in keyof T]: T[K] & { name: K };
 };
+type StrictDefaultSort<T> = undefined extends T ? undefined : T;
 
 /**
  * A type that represents a valid collection schema. For more information, refer to the
@@ -307,6 +308,7 @@ type EnforceKeyAndNameMatch<
 type CollectionCreate<
   Fields extends CollectionField<string, string>[],
   Name extends string,
+  DefaultSort extends DefaultSortingFields<Fields> | undefined,
 > = EnforceNestedFields<Fields> & {
   fields: {
     [K in keyof Fields]: Fields[K] extends EmbeddingField<infer T, string>
@@ -318,7 +320,9 @@ type CollectionCreate<
         };
   };
   name: Name;
-  default_sorting_field?: DefaultSortingFields<Fields> | undefined;
+  default_sorting_field: DefaultSort extends undefined
+    ? undefined
+    : StrictDefaultSort<DefaultSort>;
   symbols_to_index?: string[];
   token_separators?: string[];
   metadata?: Record<string, unknown>;
@@ -394,7 +398,16 @@ interface CreateOptions {
   src_name?: string;
 }
 
-type Collection = CollectionCreate<CollectionField<string, string>[], string>;
+type Collection<
+  Fields extends CollectionField<string, string>[] = CollectionField<
+    string,
+    string
+  >[],
+  Name extends string = string,
+  DefaultSort extends DefaultSortingFields<Fields> | undefined =
+    | DefaultSortingFields<Fields>
+    | undefined,
+> = CollectionCreate<Fields, Name, DefaultSort>;
 
 /**
  * The function to create a collection in Typesense.
@@ -405,12 +418,16 @@ type Collection = CollectionCreate<CollectionField<string, string>[], string>;
 function collection<
   const Fields extends CollectionField<string, string>[],
   const Name extends string,
+  const DefaultSort extends
+    | DefaultSortingFields<Fields>
+    | undefined = undefined,
 >(
   schema: Omit<
     CollectionCreate<Fields, Name, DefaultSort>,
-    "fields" 
+    "fields" | "default_sorting_field"
   > & {
     name: Name;
+    default_sorting_field?: DefaultSort;
     fields: {
       [K in keyof Fields]: Fields[K] extends EmbeddingField
         ? EmbeddingField<
@@ -420,8 +437,8 @@ function collection<
         : Fields[K];
     };
   },
-): CollectionCreate<Fields, Name> {
-  return schema as CollectionCreate<Fields, Name>;
+): CollectionCreate<Fields, Name, DefaultSort> {
+  return schema as CollectionCreate<Fields, Name, DefaultSort>;
 }
 
 /**
