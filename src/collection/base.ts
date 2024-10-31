@@ -399,9 +399,9 @@ type _InferTupleNames<T extends CollectionField<string, string>[]> = {
  * The options to create a collection in Typesense.
  * @property src_name The name of the source collection.
  */
-interface CreateOptions {
+type CreateOptions = {
   src_name?: string;
-}
+} & Record<string, string>;
 
 type Collection<
   Fields extends CollectionField<string, string>[] = CollectionField<
