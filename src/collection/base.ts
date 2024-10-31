@@ -148,7 +148,6 @@ type BaseField<T extends string = string> = FacetIndexConstraint & {
   locale?: string;
   infix?: boolean;
   stem?: boolean;
-  num_dim?: number;
   store?: boolean;
   [key: string]: unknown;
 };
@@ -161,6 +160,9 @@ type RegularField<T extends string = string> = BaseField<T> & {
   type: FieldType;
   embed?: never;
   reference?: never;
+  num_dim?: never;
+  hnsw_params?: never;
+  vec_dist?: never;
 };
 
 /**
@@ -171,6 +173,9 @@ type ReferenceField<T extends string = string> = BaseField<T> & {
   name: T;
   type: FieldType;
   embed?: never;
+  num_dim?: never;
+  hnsw_params?: never;
+  vec_dist?: never;
   reference: DotSeparatedString;
 };
 
