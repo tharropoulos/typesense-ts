@@ -4,16 +4,22 @@ import type {
 } from "@/collection/base";
 import type { OmitDefaultSortingField } from "@/lib/utils";
 
-interface EntityMap {
+interface EntityMap<T = unknown> {
   collection: {
     body: OmitDefaultSortingField<Collection>;
     type: "collection";
     urlParams: CollectionCreateOptions;
-    return: Collection & {
-      created_at: number;
-      num_documents: number;
-      num_memory_shards: number;
-    };
+    return: T extends OmitDefaultSortingField<Collection>
+      ? T & {
+          created_at: number;
+          num_documents: number;
+          num_memory_shards: number;
+        }
+      : OmitDefaultSortingField<Collection> & {
+          created_at: number;
+          num_documents: number;
+          num_memory_shards: number;
+        };
   };
 }
 
@@ -25,8 +31,8 @@ type EntityToOptionsMap = {
   [K in keyof EntityMap]: EntityMap[K]["urlParams"];
 };
 
-type EntityToReturnMap = {
-  [K in keyof EntityMap]: EntityMap[K]["return"];
+type EntityToReturnMap<T> = {
+  [K in keyof EntityMap]: EntityMap<T>[K]["return"];
 };
 
 type GetEntity<T> = {
