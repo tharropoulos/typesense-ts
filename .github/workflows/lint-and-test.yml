@@ -1,46 +1,49 @@
 name: Test & Lint
-
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
-
 jobs:
   test:
     name: Test & Lint
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
         node-version: [20.x, 22.x]
-
+    services:
+      typesense:
+        image: typesense/typesense:27.1
+        ports:
+          - 8108:8108
+        volumes:
+          - /tmp/typesense-data:/data
+        env:
+          TYPESENSE_API_KEY: xyz
+          TYPESENSE_DATA_DIR: /data
+          TYPESENSE_ENABLE_CORS: true
     steps:
+      - name: Wait for Typesense
+        run: |
+          timeout 20 bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:8108/health)" != "200" ]]; do sleep 1; done' || false
       - uses: actions/checkout@v4
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:
           version: 8
-
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: "pnpm"
-
       - name: Install dependencies
         run: pnpm install
-
       - name: Run ESLint
         run: pnpm lint
-
       - name: Check types
         run: pnpm type-check
-
       - name: Run tests
         run: pnpm test
-
       - name: Upload test coverage
         if: ${{ env.ACT != 'true' }}
         uses: actions/upload-artifact@v4
