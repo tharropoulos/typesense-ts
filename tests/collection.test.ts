@@ -823,7 +823,7 @@ describe("InferNativeType tests", () => {
       enable_nested_fields: true,
     });
     expectTypeOf<InferNativeType<typeof schema.fields>>().toEqualTypeOf<{
-      field: never;
+      field: Record<string, unknown>;
     }>();
   });
   it("can infer the native type of an object with children keys", () => {

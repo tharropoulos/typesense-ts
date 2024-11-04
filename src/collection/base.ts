@@ -462,7 +462,11 @@ type InferNativeType<
     : never]: K extends `${Prefix}${infer Key}`
     ? Key extends `${infer Parent}.${string}`
       ? InferNativeType<T, `${Prefix}${Parent}.`>
-      : InferNativeTypeForField<Extract<T[number], { name: K }>>
+      : T[number] extends { name: K; type: "object" }
+        ? T[number]["name"] extends `${K}.${string}`
+          ? InferNativeType<T, `${K}.`>
+          : Record<string, unknown>
+        : InferNativeTypeForField<Extract<T[number], { name: K }>>
     : never;
 };
 
