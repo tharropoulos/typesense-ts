@@ -446,6 +446,15 @@ function collection<
   return schema as CollectionCreate<Fields, Name, DefaultSort>;
 }
 
+type HasParentObject<
+  T extends CollectionField[],
+  Path extends string,
+> = Path extends `${infer First}.${infer _Rest}`
+  ? Extract<T[number], { name: First; type: "object" }> extends never
+    ? false
+    : true
+  : true;
+
 /**
  * A type that infers the native type of a field schema.
  * @template T The collection's fields.
@@ -456,17 +465,21 @@ type InferNativeType<
   Prefix extends string = "",
 > = {
   [K in T[number]["name"] as K extends `${Prefix}${infer Key}`
-    ? Key extends `${infer Parent}.${string}`
-      ? Parent
+    ? HasParentObject<T, K> extends true
+      ? Key extends `${infer Parent}.${string}`
+        ? Parent
+        : Key
       : Key
     : never]: K extends `${Prefix}${infer Key}`
-    ? Key extends `${infer Parent}.${string}`
-      ? InferNativeType<T, `${Prefix}${Parent}.`>
-      : T[number] extends { name: K; type: "object" }
-        ? T[number]["name"] extends `${K}.${string}`
-          ? InferNativeType<T, `${K}.`>
-          : Record<string, unknown>
-        : InferNativeTypeForField<Extract<T[number], { name: K }>>
+    ? HasParentObject<T, K> extends true
+      ? Key extends `${infer Parent}.${string}`
+        ? InferNativeType<T, `${Prefix}${Parent}.`>
+        : T[number] extends { name: K; type: "object" }
+          ? T[number]["name"] extends `${K}.${string}`
+            ? InferNativeType<T, `${K}.`>
+            : Record<string, unknown>
+          : InferNativeTypeForField<Extract<T[number], { name: K }>>
+      : InferNativeTypeForField<Extract<T[number], { name: K }>>
     : never;
 };
 

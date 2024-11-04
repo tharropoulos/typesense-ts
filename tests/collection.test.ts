@@ -859,6 +859,34 @@ describe("InferNativeType tests", () => {
       };
     }>();
   });
+  it("can infer the native type of flattened object fields", () => {
+    const schema = collection({
+      name: "test",
+      fields: [
+        {
+          type: "object",
+          name: "field",
+          flattened: true,
+        },
+        {
+          type: "string",
+          name: "field.child",
+        },
+        {
+          type: "string",
+          name: "flattened.name",
+        },
+      ],
+      enable_nested_fields: true,
+    });
+
+    expectTypeOf<InferNativeType<typeof schema.fields>>().toEqualTypeOf<{
+      field: {
+        child: string;
+      };
+      "flattened.name": string;
+    }>();
+  });
   it("can infer the native type of an object with children keys and optional fields", () => {
     const schema = collection({
       name: "test",
