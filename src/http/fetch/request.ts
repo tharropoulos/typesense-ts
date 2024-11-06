@@ -6,10 +6,7 @@ import { constructUrl } from "@/lib/url";
 import { sleep } from "@/lib/utils";
 import { getNextNode } from "@/node";
 
-async function makeRequest<
-  TBody extends Record<string, unknown>,
-  TReturn extends Record<string, unknown>,
->({
+async function makeRequest<TBody, TReturn>({
   method,
   config,
   body,
@@ -20,8 +17,8 @@ async function makeRequest<
 }: {
   config: Configuration;
   method: HttpMethod;
-  body: TBody;
-  params: URLSearchParams;
+  body?: TBody;
+  params?: URLSearchParams;
   endpoint?: `/${string}`;
   currentNodeIndex?: number;
   attempt?: number;
