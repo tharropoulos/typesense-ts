@@ -427,6 +427,13 @@ type CreateOptions = {
   src_name?: string;
 } & Record<string, string>;
 
+/**
+ * The options to delete a collection in Typesense.
+ */
+type DeleteOptions = {
+  compact_store?: boolean;
+} & Record<string, string>;
+
 type Collection<
   Fields extends CollectionField<string, string>[] = CollectionField<
     string,
@@ -561,6 +568,7 @@ export type {
   CollectionField,
   DocumentSchema,
   EnforceKeyAndNameMatch,
+  DeleteOptions,
   FacetableFieldKeys,
   FieldType,
   GlobalCollections,
