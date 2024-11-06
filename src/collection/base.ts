@@ -525,23 +525,20 @@ type IsFieldReferenced<
 
 /**
  * A type that checks if a collection has fields that are referenced by another collection.
- * @template CollectionName The name of the current collection.
- * @template CollectionSchema The schema of the current collection.
+ * @template Name The name of the current collection.
+ * @template Fields The schema of the current collection as an array of CollectionField.
  */
 type HasReferencedFields<
-  CollectionName extends string,
-  CollectionSchema extends Record<string, CollectionField>,
+  Name extends string,
+  Fields extends readonly CollectionField[],
 > = {
-  [FieldName in keyof CollectionSchema]: IsFieldReferenced<
-    CollectionName,
-    CollectionSchema[FieldName]["name"]
+  [K in keyof Fields]: IsFieldReferenced<
+    Name,
+    Fields[K]["name"]
   >;
-}[keyof CollectionSchema] extends false
+}[number] extends false
   ? never
-  : IsFieldReferenced<
-      CollectionName,
-      CollectionSchema[keyof CollectionSchema]["name"]
-    >;
+  : IsFieldReferenced<Name, Fields[number]["name"]>;
 
 /**
  * A type that returns all the collections that have fields that are referenced by another collection.
