@@ -3,15 +3,15 @@ services:
     image: typesense/typesense:27.1
     restart: on-failure
     ports:
-        - '${FORWARD_TYPESENSE_PORT:-8108}:8108'
+      - "${FORWARD_TYPESENSE_PORT:-8108}:8108"
     environment:
-        TYPESENSE_DATA_DIR: '${TYPESENSE_DATA_DIR:-/typesense-data}'
-        TYPESENSE_API_KEY: '${TYPESENSE_API_KEY:-xyz}'
-        TYPESENSE_ENABLE_CORS: '${TYPESENSE_ENABLE_CORS:-true}'
+      TYPESENSE_DATA_DIR: "${TYPESENSE_DATA_DIR:-/typesense-data}"
+      TYPESENSE_API_KEY: "${TYPESENSE_API_KEY:-xyz}"
+      TYPESENSE_ENABLE_CORS: "${TYPESENSE_ENABLE_CORS:-true}"
     volumes:
       - ./typesense-data:/data
-    command: '--data-dir /data ----enable-cors'
+      - ./typesense-data:/analytics
+    command: "--data-dir /data ----enable-cors --enable-search-analytics=true --analytics-dir /analytics"
 
 volumes:
   typesense:
-
