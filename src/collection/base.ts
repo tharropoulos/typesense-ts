@@ -82,6 +82,28 @@ type FacetIndexConstraint =
  */
 type SortableTypes = "int32" | "float" | "int64";
 
+type CounterTypes = "int32" | "int64";
+
+/**
+ * Extracts counter field keys from a collection schema
+ * @template T The collection schema type
+ */
+type CouldBeCounterField<T extends CollectionField> = T extends {
+  type: CounterTypes;
+  store?: true;
+  optional?: false;
+}
+  ? true
+  : false;
+
+type CounterFields<T extends CollectionField[]> = T[number] extends infer F
+  ? F extends CollectionField
+    ? CouldBeCounterField<F> extends true
+      ? F["name"]
+      : never
+    : never
+  : never;
+
 /**
  * Helper type that checks if a field is sortable.
  * @template T The field schema.
@@ -548,6 +570,7 @@ export type {
   SortableFields,
   CreateOptions,
   Collection,
+  CounterFields,
 };
 
 export { collection };
