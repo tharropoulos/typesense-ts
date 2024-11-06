@@ -335,7 +335,9 @@ type StrictDefaultSort<T> = undefined extends T ? undefined : T;
 type CollectionCreate<
   Fields extends CollectionField<string, string>[],
   Name extends string,
-  DefaultSort extends DefaultSortingFields<Fields> | undefined,
+  DefaultSort extends
+    | DefaultSortingFields<Fields>
+    | undefined = DefaultSortingFields<Fields>,
 > = EnforceNestedFields<Fields> & {
   fields: {
     [K in keyof Fields]: Fields[K] extends EmbeddingField<infer T, string>
