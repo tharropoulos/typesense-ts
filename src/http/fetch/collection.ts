@@ -1,6 +1,7 @@
 import type {
   Collection,
   CreateOptions as CollectionCreateOptions,
+  DeleteOptions as CollectionDeleteOptions,
   CollectionField,
   GlobalCollections,
 } from "@/collection/base";
@@ -86,9 +87,41 @@ async function retrieveCollection<
   });
 }
 
+async function deleteCollection<
+  Name extends GlobalCollections[keyof GlobalCollections]["name"],
+>(
+  name: Name,
+  config: Configuration,
+  options?: CollectionDeleteOptions,
+): Promise<
+  Collection & {
+    created_at: number;
+    num_documents: number;
+    num_memory_shards: number;
+  }
+> {
+  if (!options) {
+    return await makeRequest({
+      endpoint: `/collections/${encodeURIComponent(name)}`,
+      config,
+      method: "DELETE",
+    });
+  }
+
+  const params = new URLSearchParams(options);
+
+  return await makeRequest({
+    endpoint: `/collections/${encodeURIComponent(name)}`,
+    config,
+    method: "DELETE",
+    params,
+  });
+}
+
 export {
   createCollection,
   updateCollection,
   retrieveCollection,
+  deleteCollection,
   retrieveAllCollections,
 };

@@ -671,6 +671,47 @@ describe("collection tests", () => {
       });
     });
   });
+  describe("deleteCollection", () => {
+    beforeAll(async () => {
+      const collection = await fetch("http://localhost:8108/collections", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-TYPESENSE-API-KEY": "xyz",
+        },
+        body: JSON.stringify(testSchema),
+      });
+      expect(collection.ok).toBe(true);
+    });
+    it("can delete a collection", async () => {
+      const result = await fetch(
+        "http://localhost:8108/collections/retrieve-test",
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            "X-TYPESENSE-API-KEY": "xyz",
+          },
+        },
+      );
+
+      expect(result.ok).toBe(true);
+    });
+    it("can't delete a non-existent collection", async () => {
+      const result = await fetch(
+        "http://localhost:8108/collections/non-existent",
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            "X-TYPESENSE-API-KEY": "xyz",
+          },
+        },
+      );
+
+      expect(result.ok).toBe(false);
+    });
+  });
   describe("updateCollection", () => {
     it("can't change a field signature without dropping it first", async () => {
       const schema = collection({
