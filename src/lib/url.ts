@@ -12,8 +12,8 @@ function constructUrl({
   endpoint?: `/${string}`;
 }) {
   const urlWithEndpoint = endpoint ? `${baseUrl}${endpoint}` : baseUrl;
-  return params && Array.from(params.entries()).length > 0
-    ? `${urlWithEndpoint}?${params}`
+  return params && Array.from(params.entries()).length > 0 ?
+      `${urlWithEndpoint}?${params}`
     : urlWithEndpoint;
 }
 

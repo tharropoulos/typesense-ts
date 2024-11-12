@@ -59,11 +59,10 @@ interface FieldTypeToNativeTypeMap {
  * @template T The field.
  */
 type InferNativeTypeForField<T extends CollectionField> =
-  T["optional"] extends true
-    ?
-        | FieldTypeToNativeTypeMap[T["type"] & keyof FieldTypeToNativeTypeMap]
-        | undefined
-    : FieldTypeToNativeTypeMap[T["type"] & keyof FieldTypeToNativeTypeMap];
+  T["optional"] extends true ?
+    | FieldTypeToNativeTypeMap[T["type"] & keyof FieldTypeToNativeTypeMap]
+    | undefined
+  : FieldTypeToNativeTypeMap[T["type"] & keyof FieldTypeToNativeTypeMap];
 
 /**
  * A type that represents a facet index constraint.
@@ -88,18 +87,22 @@ type CounterTypes = "int32" | "int64";
  * Extracts counter field keys from a collection schema
  * @template T The collection schema type
  */
-type CouldBeCounterField<T extends CollectionField> = T extends {
-  type: CounterTypes;
-  store?: true;
-  optional?: false;
-}
-  ? true
+type CouldBeCounterField<T extends CollectionField> =
+  T extends (
+    {
+      type: CounterTypes;
+      store?: true;
+      optional?: false;
+    }
+  ) ?
+    true
   : false;
 
-type CounterFields<T extends CollectionField[]> = T[number] extends infer F
-  ? F extends CollectionField
-    ? CouldBeCounterField<F> extends true
-      ? F["name"]
+type CounterFields<T extends CollectionField[]> =
+  T[number] extends infer F ?
+    F extends CollectionField ?
+      CouldBeCounterField<F> extends true ?
+        F["name"]
       : never
     : never
   : never;
@@ -108,24 +111,22 @@ type CounterFields<T extends CollectionField[]> = T[number] extends infer F
  * Helper type that checks if a field is sortable.
  * @template T The field schema.
  */
-type IsSortable<T extends CollectionField> = T["sort"] extends true
-  ? true
-  : T["type"] extends SortableTypes
-    ? T["sort"] extends false
-      ? false
-      : true
-    : false;
+type IsSortable<T extends CollectionField> =
+  T["sort"] extends true ? true
+  : T["type"] extends SortableTypes ?
+    T["sort"] extends false ?
+      false
+    : true
+  : false;
 
 /**
  * Helper type that checks if a field can be used as the default sorting field.
  * @template T The field schema.
  */
 type CouldBeDefaultSortingField<T extends CollectionField> =
-  T["optional"] extends true
-    ? false
-    : IsSortable<T> extends true
-      ? true
-      : false;
+  T["optional"] extends true ? false
+  : IsSortable<T> extends true ? true
+  : false;
 
 type SortableFields<T extends Record<string, CollectionField>> = {
   [K in keyof T]: IsSortable<T[K]> extends true ? K : never;
@@ -135,10 +136,8 @@ type SortableFields<T extends Record<string, CollectionField>> = {
 /**
  * Helper type that extracts the keys of fields that have specific boolean field set to `true`.
  */
-type IsFieldKeyTrue<
-  T extends CollectionField,
-  K extends keyof T,
-> = T[K] extends true ? K : never;
+type IsFieldKeyTrue<T extends CollectionField, K extends keyof T> =
+  T[K] extends true ? K : never;
 
 /**
  * Helper type that extracts the keys of fields that have the `facet` parameter set to `true`.
@@ -252,13 +251,15 @@ type CollectionField<T extends string = string, K extends string = string> =
   | FloatArrayField<T>;
 
 type EmbeddableFieldNames<T extends CollectionField<string, string>[]> = {
-  [K in T[number]["name"]]: Extract<T[number], { name: K }> extends infer Field
-    ? Field extends CollectionField<string, string>
-      ? Field["type"] extends "string" | "string[]" | "text"
-        ? K
-        : never
+  [K in T[number]["name"]]: Extract<T[number], { name: K }> extends (
+    infer Field
+  ) ?
+    Field extends CollectionField<string, string> ?
+      Field["type"] extends "string" | "string[]" | "text" ?
+        K
       : never
-    : never;
+    : never
+  : never;
 }[T[number]["name"]];
 
 /**
@@ -266,48 +267,54 @@ type EmbeddableFieldNames<T extends CollectionField<string, string>[]> = {
  * @template T The collection schema record.
  */
 type _CollectionFieldPathsRecord<T> = {
-  [K in keyof T]: T[K] extends {
-    name: infer Name;
-    fields: infer Fields;
-  }
-    ? Name extends string
-      ? Fields extends Record<string, { name: string }>
-        ? {
-            [F in keyof Fields]: Fields[F] extends { name: infer FieldName }
-              ? FieldName extends string
-                ? `${Name}.${FieldName}`
-                : never
-              : never;
-          }[keyof Fields]
-        : never
+  [K in keyof T]: T[K] extends (
+    {
+      name: infer Name;
+      fields: infer Fields;
+    }
+  ) ?
+    Name extends string ?
+      Fields extends Record<string, { name: string }> ?
+        {
+          [F in keyof Fields]: Fields[F] extends { name: infer FieldName } ?
+            FieldName extends string ?
+              `${Name}.${FieldName}`
+            : never
+          : never;
+        }[keyof Fields]
       : never
-    : never;
+    : never
+  : never;
 }[keyof T];
 
 /**
  * Extracts all the field paths from a collection schema.
  * @template T The collection schema.
  */
-type _CollectionFieldPaths<T> = T extends {
-  name: infer Name;
-  fields: infer Fields;
-}
-  ? Name extends string
-    ? Fields extends Record<string, { name: string; type: FieldType }>
-      ? {
-          [K in keyof Fields]: Fields[K] extends {
-            name: infer FieldName;
-            type: infer Type;
-          }
-            ? Type extends keyof Omit<
-                FieldTypeToNativeTypeMap,
-                "object" | "object[]"
-              >
-              ? FieldName extends string
-                ? `${Name}.${FieldName}`
-                : never
+type _CollectionFieldPaths<T> =
+  T extends (
+    {
+      name: infer Name;
+      fields: infer Fields;
+    }
+  ) ?
+    Name extends string ?
+      Fields extends Record<string, { name: string; type: FieldType }> ?
+        {
+          [K in keyof Fields]: Fields[K] extends (
+            {
+              name: infer FieldName;
+              type: infer Type;
+            }
+          ) ?
+            Type extends (
+              keyof Omit<FieldTypeToNativeTypeMap, "object" | "object[]">
+            ) ?
+              FieldName extends string ?
+                `${Name}.${FieldName}`
               : never
-            : never;
+            : never
+          : never;
         }[keyof Fields]
       : never
     : never
@@ -340,18 +347,17 @@ type CollectionCreate<
     | undefined = DefaultSortingFields<Fields>,
 > = EnforceNestedFields<Fields> & {
   fields: {
-    [K in keyof Fields]: Fields[K] extends EmbeddingField<infer T, string>
-      ? {
-          [P in keyof Fields[K]]: Fields[K][P];
-        } & EmbeddingField<T, EmbeddableFieldNames<Fields>>
-      : {
-          [P in keyof Fields[K]]: Fields[K][P];
-        };
+    [K in keyof Fields]: Fields[K] extends EmbeddingField<infer T, string> ?
+      {
+        [P in keyof Fields[K]]: Fields[K][P];
+      } & EmbeddingField<T, EmbeddableFieldNames<Fields>>
+    : {
+        [P in keyof Fields[K]]: Fields[K][P];
+      };
   };
   name: Name;
-  default_sorting_field: DefaultSort extends undefined
-    ? undefined
-    : StrictDefaultSort<DefaultSort>;
+  default_sorting_field: DefaultSort extends undefined ? undefined
+  : StrictDefaultSort<DefaultSort>;
   symbols_to_index?: string[];
   token_separators?: string[];
   metadata?: Record<string, unknown>;
@@ -365,13 +371,15 @@ type CollectionCreate<
  * @template T The collection's fields.
  */
 type DefaultSortingFields<T extends CollectionField<string, string>[]> = {
-  [K in T[number]["name"]]: Extract<T[number], { name: K }> extends infer Field
-    ? Field extends CollectionField<string, string>
-      ? CouldBeDefaultSortingField<Field> extends true
-        ? K
-        : never
+  [K in T[number]["name"]]: Extract<T[number], { name: K }> extends (
+    infer Field
+  ) ?
+    Field extends CollectionField<string, string> ?
+      CouldBeDefaultSortingField<Field> extends true ?
+        K
       : never
-    : never;
+    : never
+  : never;
 }[T[number]["name"]];
 
 /**
@@ -379,9 +387,8 @@ type DefaultSortingFields<T extends CollectionField<string, string>[]> = {
  * @template T The collection's fields.
  */
 type EnforceNestedFields<Fields extends CollectionField<string, string>[]> =
-  WhichObjectFields<Fields> extends never
-    ? { enable_nested_fields?: boolean }
-    : { enable_nested_fields: true };
+  WhichObjectFields<Fields> extends never ? { enable_nested_fields?: boolean }
+  : { enable_nested_fields: true };
 
 /**
  * Helper type that extracts the keys of fields that are of type `object` or `object[]`.
@@ -391,9 +398,9 @@ type WhichObjectFields<Fields extends CollectionField<string, string>[]> = {
   [K in Fields[number]["name"]]: Extract<
     Fields[number],
     { name: K }
-  >["type"] extends "object" | "object[]"
-    ? K
-    : never;
+  >["type"] extends "object" | "object[]" ?
+    K
+  : never;
 }[Fields[number]["name"]];
 
 /**
@@ -401,15 +408,15 @@ type WhichObjectFields<Fields extends CollectionField<string, string>[]> = {
  * @template T The collection's fields.
  */
 type _EnforceUniqueFieldNames<T extends CollectionField<string, string>[]> =
-  T extends [infer First, ...infer Rest]
-    ? First extends CollectionField<string, string>
-      ? Rest extends CollectionField<string, string>[]
-        ? First["name"] extends Rest[number]["name"]
-          ? ["Error: Duplicate field name found", First["name"]]
-          : [First, ..._EnforceUniqueFieldNames<Rest>]
-        : [First]
-      : never
-    : [];
+  T extends [infer First, ...infer Rest] ?
+    First extends CollectionField<string, string> ?
+      Rest extends CollectionField<string, string>[] ?
+        First["name"] extends Rest[number]["name"] ?
+          ["Error: Duplicate field name found", First["name"]]
+        : [First, ..._EnforceUniqueFieldNames<Rest>]
+      : [First]
+    : never
+  : [];
 
 /**
  * A type that infers the names of the fields in a collection schema.
@@ -465,24 +472,22 @@ function collection<
     name: Name;
     default_sorting_field?: DefaultSort;
     fields: {
-      [K in keyof Fields]: Fields[K] extends EmbeddingField
-        ? EmbeddingField<
-            Fields[K]["name"],
-            Extract<Fields[number], { type: "string" }>["name"]
-          >
-        : Fields[K];
+      [K in keyof Fields]: Fields[K] extends EmbeddingField ?
+        EmbeddingField<
+          Fields[K]["name"],
+          Extract<Fields[number], { type: "string" }>["name"]
+        >
+      : Fields[K];
     };
   },
 ): CollectionCreate<Fields, Name, DefaultSort> {
   return schema as CollectionCreate<Fields, Name, DefaultSort>;
 }
 
-type HasParentObject<
-  T extends CollectionField[],
-  Path extends string,
-> = Path extends `${infer First}.${infer _Rest}`
-  ? Extract<T[number], { name: First; type: "object" }> extends never
-    ? false
+type HasParentObject<T extends CollectionField[], Path extends string> =
+  Path extends `${infer First}.${infer _Rest}` ?
+    Extract<T[number], { name: First; type: "object" }> extends never ?
+      false
     : true
   : true;
 
@@ -495,23 +500,23 @@ type InferNativeType<
   T extends CollectionField<string, string>[],
   Prefix extends string = "",
 > = {
-  [K in T[number]["name"] as K extends `${Prefix}${infer Key}`
-    ? HasParentObject<T, K> extends true
-      ? Key extends `${infer Parent}.${string}`
-        ? Parent
-        : Key
+  [K in T[number]["name"] as K extends `${Prefix}${infer Key}` ?
+    HasParentObject<T, K> extends true ?
+      Key extends `${infer Parent}.${string}` ?
+        Parent
       : Key
-    : never]: K extends `${Prefix}${infer Key}`
-    ? HasParentObject<T, K> extends true
-      ? Key extends `${infer Parent}.${string}`
-        ? InferNativeType<T, `${Prefix}${Parent}.`>
-        : T[number] extends { name: K; type: "object" }
-          ? T[number]["name"] extends `${K}.${string}`
-            ? InferNativeType<T, `${K}.`>
-            : Record<string, unknown>
-          : InferNativeTypeForField<Extract<T[number], { name: K }>>
+    : Key
+  : never]: K extends `${Prefix}${infer Key}` ?
+    HasParentObject<T, K> extends true ?
+      Key extends `${infer Parent}.${string}` ?
+        InferNativeType<T, `${Prefix}${Parent}.`>
+      : T[number] extends { name: K; type: "object" } ?
+        T[number]["name"] extends `${K}.${string}` ?
+          InferNativeType<T, `${K}.`>
+        : Record<string, unknown>
       : InferNativeTypeForField<Extract<T[number], { name: K }>>
-    : never;
+    : InferNativeTypeForField<Extract<T[number], { name: K }>>
+  : never;
 };
 
 /**
@@ -524,11 +529,13 @@ type IsFieldReferenced<
   CurrentField extends string,
 > = {
   [CollectionName in keyof GlobalCollections]: {
-    [FieldName in keyof GlobalCollections[CollectionName]["fields"]]: GlobalCollections[CollectionName]["fields"][FieldName] extends {
-      reference: `${CurrentCollection}.${CurrentField}`;
-    }
-      ? CollectionName
-      : never;
+    [FieldName in keyof GlobalCollections[CollectionName]["fields"]]: GlobalCollections[CollectionName]["fields"][FieldName] extends (
+      {
+        reference: `${CurrentCollection}.${CurrentField}`;
+      }
+    ) ?
+      CollectionName
+    : never;
   }[keyof GlobalCollections[CollectionName]["fields"]];
 }[keyof GlobalCollections];
 
@@ -540,13 +547,11 @@ type IsFieldReferenced<
 type HasReferencedFields<
   Name extends string,
   Fields extends readonly CollectionField[],
-> = {
-  [K in keyof Fields]: IsFieldReferenced<
-    Name,
-    Fields[K]["name"]
-  >;
-}[number] extends false
-  ? never
+> =
+  {
+    [K in keyof Fields]: IsFieldReferenced<Name, Fields[K]["name"]>;
+  }[number] extends false ?
+    never
   : IsFieldReferenced<Name, Fields[number]["name"]>;
 
 /**

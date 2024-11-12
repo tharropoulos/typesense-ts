@@ -127,8 +127,9 @@ function handleNodeType<T extends NodeConfiguration>(
     ...node,
     isHealthy: true,
     lastAccessTimestamp: Date.now(),
-    url: path
-      ? `${protocol}://${host}:${port}${path}`
+    url:
+      path ?
+        `${protocol}://${host}:${port}${path}`
       : `${protocol}://${host}:${port}`,
   };
 }

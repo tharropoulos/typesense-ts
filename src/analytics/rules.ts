@@ -240,9 +240,7 @@ type AnalyticsRule<
   RuleType extends "log" ?
     LogRule<{
       [K in keyof Events]: Events[K] extends (
-        {
-          type: "click" | "visit" | "custom";
-        }
+        { type: "click" | "visit" | "custom" }
       ) ?
         Events[K] & LogEvent<Events[K]["name"], Events[K]["type"]>
       : never;
@@ -252,9 +250,7 @@ type AnalyticsRule<
       Destination,
       {
         [K in keyof Events]: Events[K] extends (
-          {
-            type: "click" | "conversion";
-          }
+          { type: "click" | "conversion" }
         ) ?
           Events[K] & CounterEvent<Events[K]["name"], Events[K]["type"], number>
         : never;

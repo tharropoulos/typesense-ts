@@ -39,9 +39,9 @@ function configure(config: CreateConfiguration): Configuration {
   });
 
   const numRetries =
-    config.numRetries && config.numRetries >= 0
-      ? config.numRetries
-      : nodes.length + (nearestNode ? 0 : 1);
+    config.numRetries && config.numRetries >= 0 ?
+      config.numRetries
+    : nodes.length + (nearestNode ? 0 : 1);
 
   const healthcheckIntervalSeconds = config.healthcheckIntervalSeconds ?? 60;
   const retryIntervalSeconds = config.retryIntervalSeconds ?? 1;
