@@ -1,11 +1,11 @@
 import type { AnalyticsEvent, ValidEventCombos } from "@/analytics/events";
 import type {
   AnalyticsRule,
+  Destinations,
   EventType,
   GlobalAnalyticRules,
   RuleTypes,
 } from "@/analytics/rules";
-import type { GlobalCollections } from "@/collection/base";
 import type { Configuration } from "@/config";
 
 import { makeRequest } from "@/http/fetch/request";
@@ -24,7 +24,7 @@ async function createEvent<Type extends ValidEventCombos["type"]>(
 
 async function createAnalyticsRule<
   const Name extends string,
-  const Destination extends GlobalCollections[keyof GlobalCollections]["name"],
+  const Destination extends Destinations,
   const RuleType extends RuleTypes,
   const Events extends { name: string; type: EventType }[],
 >(
@@ -41,7 +41,7 @@ async function createAnalyticsRule<
 
 async function upsertAnalyticsRule<
   const Name extends string,
-  const Destination extends GlobalCollections[keyof GlobalCollections]["name"],
+  const Destination extends Destinations,
   const RuleType extends RuleTypes,
   const Events extends { name: string; type: EventType }[],
 >(

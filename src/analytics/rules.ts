@@ -1,5 +1,7 @@
 import type { CounterFields, GlobalCollections } from "@/collection/base";
 
+import type { GetCollectionName, GlobalAliases } from "@/alias";
+
 /**
  * Helper type to check if an array of objects has unique 'name' properties
  * @template T - Array type containing objects with a 'name' property
@@ -84,7 +86,7 @@ interface BaseRule<RuleType extends RuleTypes> {
  * @template Events - Array of SearchEvent types
  */
 interface PopularQueriesRule<
-  Destination extends GlobalCollections[keyof GlobalCollections]["name"],
+  Destination extends Destinations,
   Events extends SearchEvent<string>[],
 > extends BaseRule<"popular_queries"> {
   params: {
@@ -92,14 +94,12 @@ interface PopularQueriesRule<
     expand_query?: boolean;
     enable_auto_aggregation?: boolean;
     source: {
-      collections: GlobalCollections[keyof GlobalCollections]["name"][];
+      collections: Destinations[];
       events?: Events;
     };
     destination: {
       collection: Destination;
-      counter_field?: CounterFields<
-        GlobalCollections[KeyFromName<Destination>]["fields"]
-      >;
+      counter_field?: GetCounterField<Destination>;
     };
   };
 }
@@ -121,7 +121,7 @@ type KeyFromName<T extends CollectionNameToKey[keyof CollectionNameToKey]> = {
  * @template Events - Array of SearchEvent types
  */
 interface NoHitsQueryRule<
-  Destination extends GlobalCollections[keyof GlobalCollections]["name"],
+  Destination extends Destinations,
   Events extends SearchEvent<string>[],
 > extends BaseRule<"nohits_queries"> {
   params: {
@@ -129,17 +129,34 @@ interface NoHitsQueryRule<
     expand_query?: boolean;
     enable_auto_aggregation?: boolean;
     source: {
-      collections: GlobalCollections[keyof GlobalCollections]["name"][];
+      collections: Destinations[];
       events?: Events;
     };
     destination: {
       collection: Destination;
-      counter_field?: CounterFields<
-        GlobalCollections[KeyFromName<Destination>]["fields"]
-      >;
+      counter_field?: GetCounterField<Destination>;
     };
   };
 }
+
+type Destinations =
+  | GlobalCollections[keyof GlobalCollections]["name"]
+  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+  | GlobalAliases[keyof GlobalAliases]["name"];
+
+type GetCounterField<
+  Destination extends
+    | GlobalCollections[keyof GlobalCollections]["name"]
+    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+    | GlobalAliases[keyof GlobalAliases]["name"],
+> =
+  Destination extends GlobalCollections[keyof GlobalCollections]["name"] ?
+    CounterFields<GlobalCollections[KeyFromName<Destination>]["fields"]>
+  : Destination extends GlobalAliases[keyof GlobalAliases]["name"] ?
+    CounterFields<
+      GlobalCollections[KeyFromName<GetCollectionName<Destination>>]["fields"]
+    >
+  : never;
 
 /**
  * Rule type for tracking numeric metrics
@@ -147,19 +164,17 @@ interface NoHitsQueryRule<
  * @template Events - Array of CounterEvent types
  */
 interface CounterRule<
-  Destination extends GlobalCollections[keyof GlobalCollections]["name"],
+  Destination extends Destinations,
   Events extends CounterEvent<string, "click" | "conversion", number>[],
 > extends BaseRule<"counter"> {
   params: {
     source: {
-      collections: GlobalCollections[keyof GlobalCollections]["name"][];
+      collections: Destinations[];
       events: Events;
     };
     destination: {
       collection: Destination;
-      counter_field?: CounterFields<
-        GlobalCollections[KeyFromName<Destination>]["fields"]
-      >;
+      counter_field?: GetCounterField<Destination>;
     };
   };
 }
@@ -170,20 +185,17 @@ interface CounterRule<
  * @template Destination - Optional collection where results will be stored
  */
 interface LogRule<
+  Destination extends Destinations,
   Events extends LogEvent<string, "click" | "visit" | "custom">[],
-  Destination extends
-    GlobalCollections[keyof GlobalCollections]["name"] = GlobalCollections[keyof GlobalCollections]["name"],
 > extends BaseRule<"log"> {
   params: {
     source: {
-      collections: GlobalCollections[keyof GlobalCollections]["name"][];
+      collections: Destinations[];
       events: Events;
     };
     destination?: {
       collection: Destination;
-      counter_field?: CounterFields<
-        GlobalCollections[KeyFromName<Destination>]["fields"]
-      >;
+      counter_field?: GetCounterField<Destination>;
     };
   };
 }
@@ -232,19 +244,21 @@ type _AvailableDestinations<RType extends RuleTypes> =
  * @template Events - Array of event configurations
  */
 type AnalyticsRule<
-  Destination extends
-    GlobalCollections[keyof GlobalCollections]["name"] = GlobalCollections[keyof GlobalCollections]["name"],
+  Destination extends Destinations = Destinations,
   RuleType extends RuleTypes = RuleTypes,
   Events extends { name: string; type: EventType }[] = never,
 > =
   RuleType extends "log" ?
-    LogRule<{
-      [K in keyof Events]: Events[K] extends (
-        { type: "click" | "visit" | "custom" }
-      ) ?
-        Events[K] & LogEvent<Events[K]["name"], Events[K]["type"]>
-      : never;
-    }>
+    LogRule<
+      Destination,
+      {
+        [K in keyof Events]: Events[K] extends (
+          { type: "click" | "visit" | "custom" }
+        ) ?
+          Events[K] & LogEvent<Events[K]["name"], Events[K]["type"]>
+        : never;
+      }
+    >
   : RuleType extends "counter" ?
     CounterRule<
       Destination,
@@ -279,7 +293,7 @@ type AnalyticsRule<
  */
 function analyticsRule<
   const Name extends string,
-  const Destination extends GlobalCollections[keyof GlobalCollections]["name"],
+  const Destination extends Destinations,
   const RuleType extends RuleTypes,
   const Events extends { name: string; type: EventType }[],
 >(
@@ -304,6 +318,7 @@ export type {
   NoHitsQueryRule,
   CounterRule,
   LogRule,
+  Destinations,
 };
 
 export { analyticsRule };
