@@ -1,3 +1,4 @@
+import type { AnalyticsEvent, ValidEventCombos } from "@/analytics/events";
 import type {
   AnalyticsRule,
   EventType,
@@ -8,6 +9,18 @@ import type { GlobalCollections } from "@/collection/base";
 import type { Configuration } from "@/config";
 
 import { makeRequest } from "@/http/fetch/request";
+
+async function createEvent<Type extends ValidEventCombos["type"]>(
+  event: AnalyticsEvent<Type>,
+  config: Configuration,
+): Promise<{ ok: boolean }> {
+  return await makeRequest({
+    body: event,
+    endpoint: "/analytics/events",
+    config,
+    method: "POST",
+  });
+}
 
 async function createAnalyticsRule<
   const Name extends string,
@@ -74,6 +87,7 @@ async function deleteAnalyticsRule<
 }
 
 export {
+  createEvent,
   upsertAnalyticsRule,
   createAnalyticsRule,
   retrieveAnalyticsRule,
