@@ -188,6 +188,43 @@ interface LogRule<
   };
 }
 
+type ExtractRuleTypes<
+  Destination extends GlobalCollections[keyof GlobalCollections]["name"],
+> =
+  keyof GlobalAnalyticRules extends never ?
+    GlobalCollections[keyof GlobalCollections]["name"]
+  : GlobalAnalyticRules[keyof GlobalAnalyticRules] extends infer Rule ?
+    Rule extends { params: { destination: { collection: Destination } } } ?
+      Rule
+    : never
+  : never;
+
+type DestinationRuleTypesMap = {
+  [Destination in GlobalCollections[keyof GlobalCollections]["name"]]: keyof GlobalAnalyticRules extends (
+    never
+  ) ?
+    never
+  : ExtractRuleTypes<Destination> extends infer Rule ?
+    Rule extends { type: infer RuleType } ?
+      RuleType
+    : never
+  : never;
+};
+
+type IsNotMember<T, U> = T extends U ? false : true;
+
+type _AvailableDestinations<RType extends RuleTypes> =
+  keyof GlobalAnalyticRules extends never ?
+    GlobalCollections[keyof GlobalCollections]["name"]
+  : {
+      [K in keyof DestinationRuleTypesMap]: DestinationRuleTypesMap[K] extends (
+        never
+      ) ?
+        K
+      : IsNotMember<RType, DestinationRuleTypesMap[K]> extends true ? K
+      : never;
+    }[keyof DestinationRuleTypesMap];
+
 /**
  * Union type for all possible analytics rules
  * @template Destination - Collection where results will be stored
