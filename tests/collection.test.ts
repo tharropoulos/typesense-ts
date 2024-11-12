@@ -4,9 +4,8 @@ import type { InferNativeType } from "@/collection/base";
 import { collection } from "@/collection/base";
 import { configure } from "@/config";
 import { create } from "@/http/fetch/create";
-import { downAll, upAll } from "docker-compose";
+import { upAll } from "docker-compose";
 import {
-  afterAll,
   afterEach,
   beforeAll,
   describe,
@@ -31,12 +30,6 @@ afterEach(async () => {
       "X-TYPESENSE-API-KEY": "xyz",
     },
   });
-});
-
-afterAll(async () => {
-  if (!isCi) {
-    await downAll({ cwd: __dirname, log: true });
-  }
 });
 
 describe("collection tests", () => {
