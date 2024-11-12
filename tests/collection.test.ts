@@ -1,10 +1,15 @@
 import type { InferNativeType } from "@/collection/base";
 
 import { collection } from "@/collection/base";
+import { validateCollectionUpdate } from "@/collection/update";
 import { configure } from "@/config";
-import { createCollection } from "@/http/fetch/collection";
+import {
+  createCollection,
+  updateCollection,
+} from "@/http/fetch/collection";
 import { upAll } from "docker-compose";
 import {
+  afterAll,
   afterEach,
   beforeAll,
   describe,
@@ -559,6 +564,189 @@ describe("collection tests", () => {
       // await expect(create(schema, config)).rejects.toThrow(
       //   "Fields with the `embed` parameter can only be of type `float[]`.",
       // );
+    });
+  });
+  describe("updateCollection", () => {
+    it("can't change a field signature without dropping it first", async () => {
+      const schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "string",
+            name: "field",
+          },
+        ],
+      });
+      await expect(createCollection(schema, config)).resolves.toBeTruthy();
+
+      const updatedSchema = validateCollectionUpdate(
+        schema,
+        // @ts-expect-error This is erroring as expected
+        {
+          fields: [
+            {
+              name: "field",
+              type: "int32",
+            },
+          ],
+        },
+      );
+      // @ts-expect-error This is erroring as expected
+      await expect(updateCollection(updatedSchema, config)).rejects.toThrow(
+        "Field `field` is already part of the schema: To change this field, drop it first before adding it back to the schema.",
+      );
+    });
+    it("can't drop a field that doesn't exist", async () => {
+      const schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "string",
+            name: "field",
+          },
+        ],
+      });
+      await expect(createCollection(schema, config)).resolves.toBeTruthy();
+
+      const updatedSchema = validateCollectionUpdate(
+        schema,
+        // @ts-expect-error This is erroring as expected
+        {
+          fields: [
+            {
+              name: "field2",
+              drop: true,
+            },
+          ],
+        },
+      );
+      // @ts-expect-error This is erroring as expected
+      await expect(updateCollection(updatedSchema, config)).rejects.toThrow(
+        "Field `field2` is not part of collection schema.",
+      );
+    });
+    it("can drop a field", async () => {
+      const schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "string",
+            name: "field",
+          },
+        ],
+        enable_nested_fields: true,
+      });
+      await expect(createCollection(schema, config)).resolves.toBeTruthy();
+
+      const updatedSchema = validateCollectionUpdate(schema, {
+        fields: [
+          {
+            name: "field",
+            drop: true,
+          },
+        ],
+      });
+      const result = await updateCollection(updatedSchema, config);
+
+      expect(result).toStrictEqual({
+        fields: [{ name: "field", drop: true }],
+      });
+    });
+    it("can reinstantiate a field", async () => {
+      const schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "string",
+            name: "field",
+          },
+        ],
+        default_sorting_field: undefined,
+      });
+      await expect(createCollection(schema, config)).resolves.toBeTruthy();
+
+      const updatedSchema = validateCollectionUpdate(schema, {
+        fields: [
+          {
+            name: "field",
+            drop: true,
+          },
+          {
+            name: "field",
+            type: "int32",
+          },
+        ],
+      });
+      const result = await updateCollection(updatedSchema, config);
+
+      expect(result).toStrictEqual({
+        fields: [
+          {
+            name: "field",
+            drop: true,
+          },
+          {
+            name: "field",
+            type: "int32",
+          },
+        ],
+      });
+    });
+    it("can add a new field", async () => {
+      const schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "string",
+            name: "field",
+          },
+        ],
+      });
+      await expect(createCollection(schema, config)).resolves.toBeTruthy();
+
+      const updatedSchema = validateCollectionUpdate(schema, {
+        fields: [
+          {
+            name: "field2",
+            type: "string",
+          },
+        ],
+      });
+      const result = await updateCollection(updatedSchema, config);
+
+      expect(result).toStrictEqual({
+        fields: [
+          {
+            name: "field2",
+            type: "string",
+          },
+        ],
+      });
+    });
+    it("can't add an object field if nested fields are not enabled", async () => {
+      const schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "string",
+            name: "field",
+          },
+        ],
+      });
+      await expect(createCollection(schema, config)).resolves.toBeTruthy();
+
+      //TODO: This should be an error, but it's not being caught
+      const updatedSchema = validateCollectionUpdate(schema, {
+        fields: [
+          {
+            name: "field2",
+            type: "object",
+          },
+        ],
+      });
+      await expect(updateCollection(updatedSchema, config)).rejects.toThrow(
+        "Type `object` or `object[]` can be used only when nested fields are enabled by setting` enable_nested_fields` to true.",
+      );
     });
   });
   describe("InferNativeType tests", () => {

@@ -39,6 +39,21 @@ async function createCollection<
   });
 }
 
+async function updateCollection<
+  const T extends { fields: CollectionField[]; name: string },
+>(
+  collection: T,
+  config: Configuration,
+): Promise<{ fields: CollectionField<string, string>[] }> {
+  return await makeRequest({
+    body: { fields: collection.fields },
+    endpoint: `/collections/${encodeURIComponent(collection.name)}`,
+    config,
+    method: "PATCH",
+  });
+}
+
 export {
   createCollection,
+  updateCollection,
 };

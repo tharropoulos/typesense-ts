@@ -1,6 +1,6 @@
 import type { UrlString } from "@/node";
 
-type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
+type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
 function constructUrl({
   baseUrl,
