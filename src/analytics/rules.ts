@@ -303,6 +303,7 @@ export type {
   AnalyticsRule,
   EventType,
   RuleTypes,
+  BaseEvent,
   PopularQueriesRule,
   NoHitsQueryRule,
   CounterRule,
