@@ -53,7 +53,42 @@ async function updateCollection<
   });
 }
 
+async function retrieveAllCollections(config: Configuration): Promise<
+  (OmitDefaultSortingField<Collection> & {
+    created_at: number;
+    num_documents: number;
+    num_memory_shards: number;
+  })[]
+> {
+  return await makeRequest({
+    endpoint: "/collections",
+    config,
+    method: "GET",
+  });
+}
+
+async function retrieveCollection<
+  Name extends GlobalCollections[keyof GlobalCollections]["name"],
+>(
+  name: Name,
+  config: Configuration,
+): Promise<
+  OmitDefaultSortingField<Collection> & {
+    created_at: number;
+    num_documents: number;
+    num_memory_shards: number;
+  }
+> {
+  return await makeRequest({
+    endpoint: `/collections/${encodeURIComponent(name)}`,
+    config,
+    method: "GET",
+  });
+}
+
 export {
   createCollection,
   updateCollection,
+  retrieveCollection,
+  retrieveAllCollections,
 };

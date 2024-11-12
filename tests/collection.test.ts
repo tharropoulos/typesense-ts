@@ -5,6 +5,8 @@ import { validateCollectionUpdate } from "@/collection/update";
 import { configure } from "@/config";
 import {
   createCollection,
+  retrieveAllCollections,
+  retrieveCollection,
   updateCollection,
 } from "@/http/fetch/collection";
 import { upAll } from "docker-compose";
@@ -36,6 +38,21 @@ afterEach(async () => {
   });
 });
 
+const testSchema = collection({
+  fields: [
+    {
+      name: "field",
+      type: "string",
+    },
+  ],
+  name: "retrieve-test",
+});
+
+declare module "@/collection/base" {
+  interface GlobalCollections {
+    test: typeof testSchema;
+  }
+}
 describe("collection tests", () => {
   const config = configure({
     apiKey: "xyz",
@@ -564,6 +581,94 @@ describe("collection tests", () => {
       // await expect(create(schema, config)).rejects.toThrow(
       //   "Fields with the `embed` parameter can only be of type `float[]`.",
       // );
+    });
+  });
+  describe("retrieveCollection", () => {
+    beforeAll(async () => {
+      const collection = await fetch("http://localhost:8108/collections", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-TYPESENSE-API-KEY": "xyz",
+        },
+        body: JSON.stringify(testSchema),
+      });
+      expect(collection.ok).toBe(true);
+    });
+    afterAll(async () => {
+      await fetch("http://localhost:8108/collections/retrieve-test", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "X-TYPESENSE-API-KEY": "xyz",
+        },
+      });
+    });
+
+    it("throws an error if the collection doesn't exist", async () => {
+      // @ts-expect-error This is erroring as expected
+      await expect(retrieveCollection("non-existent", config)).rejects.toThrow(
+        "Not Found",
+      );
+    });
+    it("can retrieve all collections", async () => {
+      const result = await retrieveAllCollections(config);
+
+      expect(result.length).toBeGreaterThanOrEqual(1);
+      const retrievedCollection = result.find(
+        (c) => c.name === "retrieve-test",
+      );
+      expect(retrievedCollection).toMatchObject({
+        name: "retrieve-test",
+        num_documents: 0,
+        fields: [
+          {
+            name: "field",
+            type: "string",
+            facet: false,
+            index: true,
+            locale: "",
+            infix: false,
+            optional: false,
+            sort: false,
+            stem: false,
+            store: true,
+          },
+        ],
+        default_sorting_field: "",
+        enable_nested_fields: false,
+        symbols_to_index: [],
+        token_separators: [],
+      });
+    });
+    it("can retrieve a single collection", async () => {
+      const result = await retrieveCollection("retrieve-test", config);
+
+      const { created_at, ...expectedResult } = result;
+
+      expect(created_at).toBeCloseTo(Date.now() / 1000, -3);
+      expect(expectedResult).toMatchObject({
+        name: "retrieve-test",
+        num_documents: 0,
+        fields: [
+          {
+            name: "field",
+            type: "string",
+            facet: false,
+            index: true,
+            locale: "",
+            infix: false,
+            optional: false,
+            sort: false,
+            stem: false,
+            store: true,
+          },
+        ],
+        default_sorting_field: "",
+        enable_nested_fields: false,
+        symbols_to_index: [],
+        token_separators: [],
+      });
     });
   });
   describe("updateCollection", () => {
