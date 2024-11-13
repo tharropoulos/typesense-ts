@@ -1,7 +1,7 @@
 import type {
   CheckSquareBrackets,
   FilterClause,
-  IsValid,
+  IsNextTokenValid,
   ParseEval,
   ReadToken,
   Tokenizer,
@@ -105,13 +105,13 @@ describe("Tokenizer tests", () => {
 describe("IsValid tests", () => {
   it("should validate a single filter clause", () => {
     expectTypeOf<
-      IsValid<FilterClause<"age:=20", false>, typeof _usersSchema, []>
+      IsNextTokenValid<FilterClause<"age:=20", false>, typeof _usersSchema, []>
     >().toEqualTypeOf<true>();
   });
 
   it("should validate a range filter clause", () => {
     expectTypeOf<
-      IsValid<
+      IsNextTokenValid<
         FilterClause<"age:>=20", true>,
         typeof _usersSchema,
         [NumToken<"30">]
@@ -121,43 +121,51 @@ describe("IsValid tests", () => {
 
   it("should validate a colon followed by a number", () => {
     expectTypeOf<
-      IsValid<":", typeof _usersSchema, [NumToken<"30">]>
+      IsNextTokenValid<":", typeof _usersSchema, [NumToken<"30">]>
     >().toEqualTypeOf<true>();
   });
 
   it("should validate a comma followed by a filter", () => {
     expectTypeOf<
-      IsValid<",", typeof _usersSchema, [FilterClause<"age:<=40", true>]>
+      IsNextTokenValid<
+        ",",
+        typeof _usersSchema,
+        [FilterClause<"age:<=40", true>]
+      >
     >().toEqualTypeOf<true>();
   });
 
   it("should invalidate incorrect tokens after [", () => {
     expectTypeOf<
-      IsValid<"[", typeof _usersSchema, [NumToken<"30">]>
+      IsNextTokenValid<"[", typeof _usersSchema, [NumToken<"30">]>
     >().toEqualTypeOf<"Invalid token after `[`, expected filter">();
   });
 
   it("should invalidate incorrect tokens after filter", () => {
     expectTypeOf<
-      IsValid<FilterClause<"age:=20", true>, typeof _usersSchema, ["["]>
+      IsNextTokenValid<
+        FilterClause<"age:=20", true>,
+        typeof _usersSchema,
+        ["["]
+      >
     >().toEqualTypeOf<"Invalid token after filter, expected a number">();
   });
 
   it("should invalidate incorrect tokens after colon", () => {
     expectTypeOf<
-      IsValid<":", typeof _usersSchema, ["["]>
+      IsNextTokenValid<":", typeof _usersSchema, ["["]>
     >().toEqualTypeOf<"Invalid token after `:`, expected number">();
   });
 
   it("should invalidate incorrect tokens after comma", () => {
     expectTypeOf<
-      IsValid<",", typeof _usersSchema, [NumToken<"30">]>
+      IsNextTokenValid<",", typeof _usersSchema, [NumToken<"30">]>
     >().toEqualTypeOf<"Invalid token after `,`, expected filter">();
   });
 
   it("should invalidate incorrect tokens after number", () => {
     expectTypeOf<
-      IsValid<NumToken<"30">, typeof _usersSchema, [":"]>
+      IsNextTokenValid<NumToken<"30">, typeof _usersSchema, [":"]>
     >().toEqualTypeOf<"Invalid token after number, expected `,` or `]`">();
   });
 });

@@ -85,13 +85,13 @@ type IsValidArray<
           : `Invalid token sequence: ${GetTokenType<Head>} cannot be the only token`
         : IsValidArray<Tail, Schema, [...Acc, Head], true>
       : `Invalid start token: ${GetTokenType<Head>}`
-    : IsValid<Head, Schema, Tail> extends true ?
+    : IsNextTokenValid<Head, Schema, Tail> extends true ?
       IsValidArray<Tail, Schema, [...Acc, Head], true>
-    : IsValid<Head, Schema, Tail>
+    : IsNextTokenValid<Head, Schema, Tail>
   : IsEmpty<Acc> extends false ?
-    IsValid<Acc[0], Schema, Tail<Token, Acc>> extends true ?
+    IsNextTokenValid<Acc[0], Schema, Tail<Token, Acc>> extends true ?
       true
-    : IsValid<Acc[0], Schema, Tail<Token, Acc>>
+    : IsNextTokenValid<Acc[0], Schema, Tail<Token, Acc>>
   : true;
 
 type GetTokenType<T extends Token> =
@@ -103,51 +103,61 @@ type GetTokenType<T extends Token> =
   : T extends Comma ? "`,`"
   : "unknown token";
 
-type IsValid<
-  Current extends Token,
+type IsValidFilterClause<
+  Clause extends string,
   Schema extends OmitDefaultSortingField<Collection>,
-  RemainingTokens extends Token[],
+  TNext extends Token[],
+  InRange extends boolean,
 > =
-  Current extends LSquare ?
-    RemainingTokens[0] extends FilterClause<string, true> ?
-      true
-    : `Invalid token after \`[\`, expected filter`
-  : Current extends FilterClause<infer Clause, true> ?
-    RemainingTokens[0] extends NumToken<string> ?
+  InRange extends true ?
+    TNext[0] extends NumToken<string> ?
       ParseFilter<Clause, Schema> extends infer Result ?
         Result extends true ?
           true
         : `[Error on filter]: ${Result & string}`
       : `[Error on filter]: couldn't parse filter`
     : `Invalid token after filter, expected a number`
-  : Current extends Colon ?
-    RemainingTokens[0] extends NumToken<string> ?
+  : IsEmpty<TNext> extends true ?
+    ParseFilter<Clause, Schema> extends infer Result ?
+      Result extends true ?
+        true
+      : `[Error on filter]: ${Result & string}`
+    : `[Error on filter]: couldn't parse filter`
+  : `Invalid token: a filter must be the only token in _eval`;
+
+type IsValidNumber<TNext extends Token[]> =
+  TNext[0] extends Comma | RSquare ? true
+  : `Invalid token after number, expected \`,\` or \`]\``;
+
+type IsValidBracket<Current extends LSquare | RSquare, TNext extends Token[]> =
+  Current extends LSquare ?
+    TNext[0] extends FilterClause<string, true> ?
+      true
+    : `Invalid token after \`[\`, expected filter`
+  : IsEmpty<TNext> extends true ? true
+  : TNext[0] extends EOF ? true
+  : `Invalid token after \`]\`, expected EOF`;
+
+type IsValidOperator<Current extends Colon | Comma, TNext extends Token[]> =
+  Current extends Colon ?
+    TNext[0] extends NumToken<string> ?
       true
     : `Invalid token after \`:\`, expected number`
-  : Current extends Comma ?
-    RemainingTokens[0] extends FilterClause<string, true> ?
-      true
-    : `Invalid token after \`,\`, expected filter`
-  : Current extends RSquare ?
-    IsEmpty<RemainingTokens> extends true ? true
-    : RemainingTokens[0] extends EOF ? true
-    : `Invalid token after \`]\`, expected EOF`
-  : Current extends string ? `Invalid token: \`${Current}\``
-  : Current extends FilterClause<infer Clause, false> ?
-    IsEmpty<RemainingTokens> extends true ?
-      ParseFilter<Clause, Schema> extends infer Result ?
-        Result extends true ?
-          true
-        : `[Error on filter]: ${Result & string}`
-      : `[Error on filter]: couldn't parse filter`
-    : `Invalid token: a filter must be the only token in _eval`
-  : Current extends NumToken<string> ?
-    RemainingTokens[0] extends Comma | RSquare ?
-      true
-    : `Invalid token after number, expected \`,\` or \`]\``
-  : Current extends string ? `Invalid token: ${Current}`
-  : "Invalid token";
+  : TNext[0] extends FilterClause<string, true> ? true
+  : `Invalid token after \`,\`, expected filter`;
 
+type IsNextTokenValid<
+  Current extends Token,
+  Schema extends OmitDefaultSortingField<Collection>,
+  TNext extends Token[],
+> =
+  Current extends FilterClause<infer Clause, infer InRange> ?
+    IsValidFilterClause<Clause, Schema, TNext, InRange>
+  : Current extends NumToken<string> ? IsValidNumber<TNext>
+  : Current extends LSquare | RSquare ? IsValidBracket<Current, TNext>
+  : Current extends Colon | Comma ? IsValidOperator<Current, TNext>
+  : Current extends string ? `Invalid token: \`${Current}\``
+  : "Invalid token";
 type CheckSquareBrackets<TokenArray extends Token[]> = CheckBalancedTokens<
   Token,
   TokenArray,
@@ -174,7 +184,7 @@ type Parse<
 export type {
   FilterClause,
   Tokenizer,
-  IsValid,
+  IsNextTokenValid,
   ReadToken,
   CheckSquareBrackets,
   ReadNum,
