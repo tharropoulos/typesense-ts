@@ -1,7 +1,4 @@
-import { before } from "node:test";
-
 import { alias } from "@/alias";
-import { analyticsRule } from "@/analytics/rules";
 import { collection } from "@/collection/base";
 import { configure } from "@/config";
 import {
@@ -10,11 +7,6 @@ import {
   retrieveAllAliases,
   upsertAlias,
 } from "@/http/fetch/alias";
-import {
-  createAnalyticsRule,
-  createEvent,
-  deleteAnalyticsRule,
-} from "@/http/fetch/analytics";
 import { upAll } from "docker-compose";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
