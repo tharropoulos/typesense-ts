@@ -2,6 +2,7 @@ import type {
   CheckReferences,
   Collection,
   CollectionField,
+  ExtractFields,
   FieldType,
   FieldTypeMap,
   GlobalCollections,
@@ -166,13 +167,6 @@ type ReadToken<
       : [Acc, Rest]
     : [Acc, Rest]
   : [Acc, Rest];
-
-type ExtractFields<T> =
-  T extends { fields: infer F } ?
-    F extends CollectionField[] ?
-      F
-    : never
-  : never;
 
 /**
  * Checks if a type is a valid token.

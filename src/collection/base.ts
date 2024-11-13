@@ -122,6 +122,16 @@ type IsSortable<T extends CollectionField> =
   : false;
 
 /**
+ * Helper type that extracts the keys of fields of a collection schema
+ */
+type ExtractFields<T> =
+  T extends { fields: infer F } ?
+    F extends CollectionField[] ?
+      F
+    : never
+  : never;
+
+/**
  * Helper type that checks if a field can be used as the default sorting field.
  * @template T The field schema.
  */
@@ -590,6 +600,7 @@ export type {
   CollectionField,
   DocumentSchema,
   EnforceKeyAndNameMatch,
+  ExtractFields,
   DeleteOptions,
   FacetableFieldKeys,
   FieldType,
