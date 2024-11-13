@@ -1,3 +1,5 @@
+import type { OmitDefaultSortingField } from "@/lib/utils";
+
 /**
  * All field types that can be used in a collection schema.
  * [Reference](https://typesense.org/docs/27.0/api/collections.html#field-types)
@@ -564,6 +566,21 @@ type CheckReferences = {
   >;
 };
 
+/**
+ * Maps field names to their types for a given collection schema.
+ * @template T - The collection schema to map.
+ */
+type FieldTypeMap<
+  T extends OmitDefaultSortingField<
+    CollectionCreate<CollectionField<string, string>[], string>
+  >,
+> = {
+  [K in T["fields"][number]["name"]]: Extract<
+    T["fields"][number],
+    { name: K }
+  >["type"];
+};
+
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface GlobalCollections {}
 
@@ -576,6 +593,7 @@ export type {
   DeleteOptions,
   FacetableFieldKeys,
   FieldType,
+  FieldTypeMap,
   GlobalCollections,
   InferNativeType,
   InfixableFieldKeys,
