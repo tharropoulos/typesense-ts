@@ -12,6 +12,7 @@ import type {
   ValidNextTokenMap,
 } from "@/lexer/filter";
 import type {
+  GeoToken,
   Ident,
   LiteralToken,
   NumToken,
@@ -28,6 +29,7 @@ const _usersSchema = collection({
     { type: "string", optional: false, name: "name" },
     { type: "int32", optional: false, name: "age", sort: true },
     { type: "string", optional: true, name: "email" },
+    { type: "geopoint", name: "location" },
   ],
   default_sorting_field: "age",
 });
@@ -68,7 +70,6 @@ const _unregisteredSchema = collection({
 
 declare module "@/collection/base" {
   interface GlobalCollections {
-    users: typeof _usersSchema;
     posts: typeof _postsSchema;
     comments: typeof _commentSchema;
   }
@@ -158,6 +159,11 @@ describe("ReadToken tests", () => {
       [ReferenceToken<"products", "id:=1">, " age = 20"]
     >();
   });
+  it("should read a geo token", () => {
+    expectTypeOf<ReadToken<":(29.38, 27.832384, 2.3 km)">>().toEqualTypeOf<
+      [GeoToken<"29.38, 27.832384, 2.3 km">, ""]
+    >();
+  });
   it("should not read an illegal token", () => {
     expectTypeOf<ReadToken<" = age = 20">>().toEqualTypeOf<
       ["", " = age = 20"]
@@ -174,6 +180,7 @@ describe("FieldTypeMap tests", () => {
       name: "string";
       age: "int32";
       email: "string";
+      location: "geopoint";
     }>();
   });
 });
@@ -258,17 +265,20 @@ describe("IsNextTokenValid type tests", () => {
     it("should validate an identifier followed by an operator", () => {
       expectTypeOf<
         IsNextTokenValid<
-          Ident<"name", "string">,
+          Ident<"location", "string">,
           typeof _usersSchema,
-          [":", LiteralToken<"t">]
+          [GeoToken<string>, ":", LiteralToken<"t">]
         >
       >().toEqualTypeOf<true>();
     });
-
-    it("should invalidate an identifier followed by an invalid operator", () => {
+    it("should validate a geopoint identifier followed by geo token", () => {
       expectTypeOf<
-        IsNextTokenValid<Ident<"age", "int32">, typeof _usersSchema, [":"]>
-      >().toEqualTypeOf<"Invalid token sequence: identifier with name `age` followed by `:`">();
+        IsNextTokenValid<
+          Ident<"location", "geopoint">,
+          typeof _usersSchema,
+          [GeoToken<string>]
+        >
+      >().toEqualTypeOf<true>();
     });
     it("should invalidate an identifier followed by another identifier", () => {
       expectTypeOf<

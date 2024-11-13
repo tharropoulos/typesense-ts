@@ -16,6 +16,7 @@ import type {
   Comma,
   EOF,
   EQ,
+  GeoToken,
   GT,
   GTE,
   Ident,
@@ -72,7 +73,8 @@ type Token =
   | Ident<string, FieldType>
   | NumToken<string>
   | LiteralToken<string>
-  | ReferenceToken<string>;
+  | ReferenceToken<string>
+  | GeoToken<string>;
 
 /**
  * Reads an escape token, denoted by backticks from the input string.
@@ -152,7 +154,8 @@ type ReadToken<
   Acc extends string = EOF,
   Rest extends string = T,
 > =
-  T extends `$${infer Collection}(${infer Rest}` ?
+  T extends `:(${infer Content})${infer Tail}` ? [GeoToken<Content>, Tail]
+  : T extends `$${infer Collection}(${infer Rest}` ?
     ReadNestedReferenceToken<Rest, Collection>
   : T extends `${infer Head1}${infer Head2}${infer Head3}${infer Tail3}` ?
     `${Head1}${Head2}${Head3}` extends keyof TokenMap ?
@@ -277,6 +280,8 @@ interface TypeToOperatorMap {
   "int64[]": LT | GT | EQ;
   "float[]": LT | GT | EQ;
   "bool[]": EQ;
+  geopoint: GeoToken<string>;
+  "geopoint[]": GeoToken<string>;
 }
 
 /**
@@ -470,6 +475,7 @@ type GetTokenType<T extends Token> =
   T extends NumToken<string> ? "num token"
   : T extends LiteralToken<string> ? "literal token"
   : T extends Ident<string, FieldType> ? "identifier"
+  : T extends GeoToken<string> ? "geo token"
   : T extends LParen ? "`(`"
   : T extends RParen ? "`)`"
   : T extends LAnd ? "`&&`"

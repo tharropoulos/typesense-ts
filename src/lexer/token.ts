@@ -145,6 +145,12 @@ interface ReferenceToken<T extends string, C extends string = string> {
   clause: C;
 }
 
+//TODO: GO MORE IN DEPTH
+interface GeoToken<C extends string> {
+  type: "geo";
+  clause: C;
+}
+
 /**
  * Maps token literals to their respective types.
  */
@@ -204,5 +210,6 @@ export type {
   SortOrder,
   Spread,
   TokenMap,
+  GeoToken,
   Whitespace,
 };
