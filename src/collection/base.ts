@@ -162,10 +162,12 @@ type IsFieldKeyTrue<T extends CollectionField, K extends keyof T> =
  * Helper type that extracts the keys of fields that have the `facet` parameter set to `true`.
  * @template T The collection's fields.
  */
-type FacetableFieldKeys<T extends Record<string, CollectionField>> = {
-  [K in keyof T]: IsFieldKeyTrue<T[K], "facet"> extends never ? never : K;
-}[keyof T] &
-  string;
+type FacetableFieldKeys<T extends CollectionField[]> = T[number]["name"] &
+  {
+    [K in T[number] as K["name"]]: IsFieldKeyTrue<K, "facet"> extends never ?
+      never
+    : K["name"];
+  }[T[number]["name"]];
 
 /**
  * Helper type that extracts the keys of fields that have the `infix` parameter set to `true`.
