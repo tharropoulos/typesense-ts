@@ -177,6 +177,13 @@ type QueryableFields<T extends CollectionField[]> = {
   : undefined;
 };
 
+type CollectionFieldFromTuple<
+  Names extends readonly string[],
+  Fields extends CollectionField[],
+> = {
+  [K in keyof Names]: Extract<Fields[number], { name: Names[K] }>;
+};
+
 /**
  * Helper type that extracts the keys of fields that have the `infix` parameter set to `true`.
  * @template T The collection's fields.
@@ -629,6 +636,7 @@ export type {
   CreateOptions,
   Collection,
   QueryableFields,
+  CollectionFieldFromTuple,
   CounterFields,
 };
 
