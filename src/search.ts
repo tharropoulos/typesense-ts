@@ -23,9 +23,6 @@ export type Remove<T, ToRemove extends string, Collect extends string = ""> =
     >
   : Collect;
 
-type SplitByComma<T extends string> =
-  T extends `${infer Head},${infer Tail}` ? [Head, ...SplitByComma<Tail>] : [T];
-
 type Combinations<T extends string, U extends string = T> =
   T extends unknown ? T | `${T},${Combinations<Exclude<U, T>>}` : never;
 
@@ -38,15 +35,17 @@ type FacetBy<T extends CollectionField[]> = FormatCombinations<
 >;
 
 type MapInfixValues<T extends CollectionField[], K extends readonly string[]> =
-  K extends [infer First extends string, ...infer Rest extends string[]] ?
-    First extends InfixableFieldKeys<T> ?
-      `${OperationMode}${Rest extends [] ? "" : ","}${Rest extends string[] ? MapInfixValues<T, Rest> : ""}`
-    : `off${Rest extends [] ? "" : ","}${Rest extends string[] ? MapInfixValues<T, Rest> : ""}`
-  : "";
+  K extends readonly [unknown, ...unknown[]] ?
+    {
+      [P in keyof K]: K[P] extends InfixableFieldKeys<T> ? OperationMode
+      : "off";
+    }
+  : never;
 
-type QueryBy<T extends CollectionField[]> = FormatCombinations<
-  Extract<QueryableFields<T>[number], { name: string }>["name"]
->;
+export type QueryBy<T extends CollectionField[]> = Extract<
+  QueryableFields<T>[number],
+  { name: string }
+>["name"][];
 
 type LengthOf<T extends readonly unknown[]> = T["length"];
 
@@ -60,54 +59,42 @@ type ValidFacetQuery<
 
 interface QueryParams<
   Fields extends CollectionField[],
-  S extends keyof QueryBy<Fields> = keyof QueryBy<Fields>,
-  SplitS extends readonly string[] = SplitByComma<S>,
-  L extends number = LengthOf<SplitS>,
-  Stopwords extends string = string,
+  S extends QueryBy<Fields> = QueryBy<Fields>,
+  L extends number = LengthOf<S>,
 > {
   q: "*" | (string & {});
   query_by: S;
-  prefix?: GenerateCommaPattern<L, boolean> | boolean;
-  infix?: MapInfixValues<Fields, SplitS>;
+  prefix?: TupleOfLength<L, boolean> | boolean;
+  infix?: MapInfixValues<Fields, S>;
   pre_segmented_query?: boolean;
   vector_query?: string;
   preset?: string; //TODO
   voice_query?: string;
-  stopwords?: CommaSeparatedString<Stopwords, string>;
+  stopwords?: string[];
 }
-type ValidFormat<
-  T extends string,
-  Format extends Exclude<PropertyKey, symbol>,
-> = T extends `${Format}` ? T : never;
 
-type CommaSeparatedString<
-  T extends string,
-  Format extends Exclude<PropertyKey, symbol> = number,
+type TupleOfLength<
+  Length extends number,
+  Type = unknown,
+  Arr extends Type[] = [],
 > =
-  T extends "" ? never
-  : T extends `${ValidFormat<infer First, Format>},${infer Rest}` ?
-    T extends `${First},${CommaSeparatedString<Rest, Format>}` ?
-      T
-    : "Invalid format, it should be a comma-separated string"
-  : ValidFormat<T, Format>;
+  Arr["length"] extends Length ? Arr
+  : TupleOfLength<Length, Type, [...Arr, Type]>;
 
 interface RankingParams<
   Fields extends CollectionField[],
-  S extends keyof QueryBy<Fields> = keyof QueryBy<Fields>,
-  SplitS extends readonly unknown[] = SplitByComma<S>,
-  L extends number = LengthOf<SplitS>,
-  PinnedHits extends string = string,
-  HiddenHits extends string = string,
+  S extends QueryBy<Fields> = QueryBy<Fields>,
+  L extends number = LengthOf<S>,
 > {
-  query_by_weights?: GenerateCommaPattern<L, number>;
+  query_by_weights?: TupleOfLength<L, number>;
   prioritize_token_position?: boolean;
   prioritize_num_matching_fields?: boolean;
   prioritize_exact_match?: boolean;
   text_match_type?: "max_score" | "max_weight";
   enable_overrides?: boolean;
   override_tags?: string; //TODO
-  pinned_hits?: CommaSeparatedString<PinnedHits, `${string}:${string}`>;
-  hidden_hits?: CommaSeparatedString<HiddenHits, string>;
+  pinned_hits?: `${string}:${string}`[];
+  hidden_hits?: string[];
   filter_curated_hits?: boolean;
   enable_synonyms?: boolean;
   synonym_prefix?: boolean;
@@ -144,11 +131,10 @@ type NumberRange<
 
 interface TypoToleranceParams<
   TFields extends CollectionField[],
-  S extends keyof QueryBy<TFields> = keyof QueryBy<TFields>,
-  SplitS extends readonly unknown[] = SplitByComma<S>,
-  L extends number = LengthOf<SplitS>,
+  S extends QueryBy<TFields> = QueryBy<TFields>,
+  L extends number = LengthOf<S>,
 > {
-  num_typos?: GenerateCommaPattern<L, NumberRange<0, 2>> | NumberRange<0, 2>;
+  num_typos?: TupleOfLength<L, NumberRange<0, 2>> | NumberRange<0, 2>;
   min_len_1typo?: number;
   min_len_2typo?: number;
   split_join_tokens?: OperationMode;
@@ -159,28 +145,6 @@ interface TypoToleranceParams<
   enable_typos_for_alpha_numerical_tokens?: boolean;
   synonym_num_typos?: boolean;
 }
-
-// Proper subtraction that maintains literal numbers
-type BuildTuple<N extends number, T extends unknown[] = []> =
-  T["length"] extends N ? T : BuildTuple<N, [...T, unknown]>;
-
-type Subtract<A extends number, B extends number> =
-  BuildTuple<A> extends [...BuildTuple<B>, ...infer Rest] ? Rest["length"]
-  : never;
-
-type GenerateCommaPattern<
-  L extends number,
-  T = number,
-  Acc extends string = `${T & Exclude<PropertyKey, symbol>}`,
-> =
-  L extends 1 ? Acc
-  : L extends 2 ? `${Acc},${T & Exclude<PropertyKey, symbol>}`
-  : GenerateCommaPattern<
-      Subtract<L, 1>,
-      T,
-      `${Acc},${T & Exclude<PropertyKey, symbol>}`
-    >;
-
 interface FilterParams {
   enable_lazy_filter?: boolean;
 }
@@ -189,27 +153,21 @@ export type SearchParams<
   Schema extends OmitDefaultSortingField<Collection>,
   FilterBy extends string,
   SortBy extends string,
-  S extends keyof QueryBy<ExtractFields<Schema>> = keyof QueryBy<
-    ExtractFields<Schema>
-  >,
-  SplitS extends readonly string[] = SplitByComma<S>,
-  L extends number = LengthOf<SplitS>,
+  S extends QueryBy<ExtractFields<Schema>> = QueryBy<ExtractFields<Schema>>,
+  L extends number = LengthOf<S>,
   Fields extends CollectionField[] = ExtractFields<Schema>,
-  Stopwords extends string = string,
-  PinnedHits extends string = string,
-  HiddenHits extends string = string,
 > =
   ParseSort<SortBy, Schema> extends true ?
     ParseFilter<FilterBy, Schema> extends true ?
       FacetParams<Fields> &
-        QueryParams<Fields, S, SplitS, L, Stopwords> &
-        RankingParams<Fields, S, SplitS, L, PinnedHits, HiddenHits> &
+        QueryParams<Fields, S, L> &
+        RankingParams<Fields, S, L> &
         FilterParams &
         GroupParams<Fields> &
-        ResultParams<Fields, S, SplitS> &
         CachingParams &
-        TypoToleranceParams<Fields, S, SplitS, L> &
-        PaginationParams & {
+        TypoToleranceParams<Fields, S, L> &
+        PaginationParams &
+        ResultParams<Fields, S> & {
           filter_by?: FilterBy;
           sort_by?: SortBy;
         }
@@ -230,32 +188,20 @@ interface GroupParams<Fields extends CollectionField[]> {
   group_limit?: number;
   group_missing_values?: boolean;
 }
+type SubsetTuple<S extends readonly string[]> = S[number][];
 
 interface ResultParams<
   Fields extends CollectionField[],
-  S extends keyof QueryBy<Fields>,
-  SplitS extends readonly string[] = SplitByComma<S>,
+  S extends QueryBy<Fields>,
 > {
-  highlight_fields?:
-    | FormatCombinations<SplitS[number]>[keyof FormatCombinations<
-        SplitS[number]
-      >]
-    | "none";
-  highlight_full_fields?:
-    | FormatCombinations<SplitS[number]>[keyof FormatCombinations<
-        SplitS[number]
-      >]
-    | "none";
+  highlight_fields?: "none" | SubsetTuple<S>;
+  highlight_full_fields?: "none" | SubsetTuple<S>;
   highlight_affix_num_tokens?: number;
-  include_fields?: FormatCombinations<
-    Fields[number]["name"]
-  >[keyof FormatCombinations<Fields[number]["name"]>];
-  exclude_fields?: FormatCombinations<
-    Fields[number]["name"]
-  >[keyof FormatCombinations<Fields[number]["name"]>];
+  include_fields?: Fields[number]["name"][];
+  exclude_fields?: Fields[number]["name"][];
   highlight_start_tag?: string;
   highlight_end_tag?: string;
-  enable_highlight_v1?: boolean; // Take note of this for later responses
+  enable_highlight_v1?: boolean;
   snippet_threshold?: number;
   limit_hits?: number;
   search_cutoff_ms?: number;
@@ -268,16 +214,12 @@ interface CachingParams {
 }
 
 export function search<
-  Schema extends OmitDefaultSortingField<Collection>,
-  FilterBy extends string,
-  SortBy extends string,
-  PinnedHits extends string,
-  HiddenHits extends string,
-  Stopwords extends string,
-  SelectedField extends keyof QueryBy<ExtractFields<Schema>>,
-  CommaSeparatedFields extends readonly string[] = SplitByComma<SelectedField>,
-  QueryByLength extends number = LengthOf<CommaSeparatedFields>,
-  Fields extends CollectionField[] = ExtractFields<Schema>,
+  const Schema extends OmitDefaultSortingField<Collection>,
+  const FilterBy extends string,
+  const SortBy extends string,
+  const SelectedField extends QueryBy<ExtractFields<Schema>>,
+  const QueryByLength extends number = LengthOf<SelectedField>,
+  const Fields extends CollectionField[] = ExtractFields<Schema>,
 >(
   _: Schema,
   params: SearchParams<
@@ -285,24 +227,16 @@ export function search<
     FilterBy,
     SortBy,
     SelectedField,
-    CommaSeparatedFields,
     QueryByLength,
-    Fields,
-    Stopwords,
-    PinnedHits,
-    HiddenHits
+    Fields
   >,
 ): SearchParams<
   Schema,
   FilterBy,
   SortBy,
   SelectedField,
-  CommaSeparatedFields,
   QueryByLength,
-  Fields,
-  Stopwords,
-  PinnedHits,
-  HiddenHits
+  Fields
 > {
   return params;
 }
