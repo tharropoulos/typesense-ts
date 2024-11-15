@@ -185,13 +185,15 @@ type CollectionFieldFromTuple<
 };
 
 /**
- * Helper type that extracts the keys of fields that have the `infix` parameter set to `true`.
- * @template T The collection's fields.
+ * Helper type that extracts the names of fields that have the `infix` parameter set to `true`.
+ * @template T The array of collection fields.
  */
-type InfixableFieldKeys<T extends Record<string, CollectionField>> = {
-  [K in keyof T]: IsFieldKeyTrue<T[K], "infix"> extends never ? never : K;
-}[keyof T] &
-  string;
+type InfixableFieldKeys<T extends CollectionField[]> = T[number]["name"] &
+  {
+    [K in T[number] as K["name"]]: IsFieldKeyTrue<K, "infix"> extends never ?
+      never
+    : K["name"];
+  }[T[number]["name"]];
 
 /**
  * A type that represents a base field schema.
