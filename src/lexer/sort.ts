@@ -216,16 +216,14 @@ type Parse<
 > =
   Tokenizer<T> extends infer Result ?
     Result extends Token[] ?
-      IsEmpty<Result> extends false ?
-        IsValidArray<Result, Schema> extends infer IsValid ?
-          IsValid extends true ?
-            true
-          : `Invalid token sequence: ${IsValid & string}`
-        : `Invalid token sequence: ${Result & string}`
-      : // Shouldn't ever be here
-        "Invalid token sequence."
-    : "Invalid token sequence."
-  : never;
+      IsValidArray<Result, Schema> extends infer IsValid ?
+        IsValid extends true ?
+          true
+        : `Invalid token sequence: ${IsValid & string}`
+      : `Invalid token sequence: ${Result & string}`
+    : // Shouldn't ever be here
+      "Invalid token sequence."
+  : "Invalid token sequence.";
 
 export type {
   Ident,
