@@ -229,7 +229,6 @@ export type {
   Ident,
   IsValid,
   IsValidArray,
-  OmitDefaultSortingField,
   ReadString,
   Token,
   Tokenizer,
