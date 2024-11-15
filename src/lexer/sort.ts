@@ -232,6 +232,6 @@ export type {
   ReadString,
   Token,
   Tokenizer,
-  Parse as SortParse,
+  Parse as ParseSort,
   ConfigToken,
 };

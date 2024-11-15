@@ -4,7 +4,7 @@ import type {
   Ident,
   IsValid,
   IsValidArray,
-  SortParse,
+  ParseSort,
   Tokenizer,
 } from "@/lexer/sort";
 import type { Colon } from "@/lexer/token";
@@ -198,31 +198,31 @@ describe("IsValidArray tests", () => {
 describe("FilterParse tests", () => {
   it("should parse simple sort expression", () => {
     expectTypeOf<
-      SortParse<"age:desc", typeof _usersSchema>
+      ParseSort<"age:desc", typeof _usersSchema>
     >().toEqualTypeOf<true>();
   });
 
   it("should parse multiple sort expressions", () => {
     expectTypeOf<
-      SortParse<"age:desc,score:asc", typeof _usersSchema>
+      ParseSort<"age:desc,score:asc", typeof _usersSchema>
     >().toEqualTypeOf<true>();
   });
 
   it("should parse sort with missing_values config", () => {
     expectTypeOf<
-      SortParse<"age(missing_values:first):desc ", typeof _usersSchema>
+      ParseSort<"age(missing_values:first):desc ", typeof _usersSchema>
     >().toEqualTypeOf<true>();
   });
 
   it("should parse sort with _text_match_score", () => {
     expectTypeOf<
-      SortParse<"_text_match_score:asc, age:asc", typeof _usersSchema>
+      ParseSort<"_text_match_score:asc, age:asc", typeof _usersSchema>
     >().toEqualTypeOf<true>();
   });
 
   it("should parse _eval expression", () => {
     expectTypeOf<
-      SortParse<
+      ParseSort<
         "_eval([(age:>=20):20, (name: `John`):5]):desc, age(missing_values:last):desc",
         typeof _usersSchema
       >
@@ -231,19 +231,19 @@ describe("FilterParse tests", () => {
 
   it("should fail for non-sortable field", () => {
     expectTypeOf<
-      SortParse<"email:desc", typeof _usersSchema>
+      ParseSort<"email:desc", typeof _usersSchema>
     >().toEqualTypeOf<"Invalid token sequence: Invalid identifier: email is not a sortable field.">();
   });
 
   it("should fail for invalid sort direction", () => {
     expectTypeOf<
-      SortParse<"age:invalid", typeof _usersSchema>
+      ParseSort<"age:invalid", typeof _usersSchema>
     >().toEqualTypeOf<"Invalid token sequence: Invalid token sequence: `:` must be followed by 'asc' or 'desc'.">();
   });
 
   it("should fail for invalid config", () => {
     expectTypeOf<
-      SortParse<"age:desc invalid:config", typeof _usersSchema>
+      ParseSort<"age:desc invalid:config", typeof _usersSchema>
     >().toEqualTypeOf<"Invalid token sequence: Invalid token sequence: sort direction must be followed by `,` or end of input.">();
   });
 });
