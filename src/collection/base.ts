@@ -143,9 +143,14 @@ type CouldBeDefaultSortingField<T extends CollectionField> =
 type SortableFields<T extends CollectionField[]> = {
   [K in keyof T]: T[K] extends CollectionField ?
     T[K]["sort"] extends true ? T[K]["name"]
+    : T[K]["type"] extends SortableTypes ?
+      T[K]["sort"] extends false ?
+        never
+      : T[K]["name"]
     : never
-  : never
-}[number] & string;
+  : never;
+}[number] &
+  string;
 
 /**
  * Helper type that extracts the keys of fields that have specific boolean field set to `true`.
