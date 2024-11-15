@@ -74,4 +74,4 @@ async function makeRequest<TBody, TReturn>({
   }
 }
 
-export { makeRequest, constructUrl };
+export { makeRequest };
