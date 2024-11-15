@@ -617,6 +617,10 @@ type FieldTypeMap<
   >["type"];
 };
 
+type GetSchemaFromName<
+  T extends GlobalCollections[keyof GlobalCollections]["name"],
+> = Extract<GlobalCollections[keyof GlobalCollections], { name: T }>;
+
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface GlobalCollections {}
 
@@ -626,6 +630,7 @@ export type {
   CollectionField,
   DocumentSchema,
   EnforceKeyAndNameMatch,
+  GetSchemaFromName,
   ExtractFields,
   DeleteOptions,
   FacetableFieldKeys,
