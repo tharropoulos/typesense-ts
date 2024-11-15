@@ -169,6 +169,14 @@ type FacetableFieldKeys<T extends CollectionField[]> = T[number]["name"] &
     : K["name"];
   }[T[number]["name"]];
 
+type QueryableFields<T extends CollectionField[]> = {
+  [K in keyof T]: T[K] extends { type: infer Type; name: string } ?
+    Type extends "string" | "string[]" ?
+      T[K]
+    : undefined
+  : undefined;
+};
+
 /**
  * Helper type that extracts the keys of fields that have the `infix` parameter set to `true`.
  * @template T The collection's fields.
@@ -620,6 +628,7 @@ export type {
   SortableFields,
   CreateOptions,
   Collection,
+  QueryableFields,
   CounterFields,
 };
 
