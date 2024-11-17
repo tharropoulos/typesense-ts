@@ -266,7 +266,6 @@ type Tokenizer<
     // Handle case when the last token is a symbol (e.g. "&&")
     [...Acc, TokenMap[T]]
   : Acc;
-
 /**
  * Maps field names to their types for a given collection schema.
  */
@@ -543,3 +542,99 @@ export type {
   TypeToOperatorMap,
   Parse as ParseFilter,
 };
+
+type StringToTokens<
+  S extends string,
+  Schema extends OmitDefaultSortingField<Collection>,
+> = Tokenizer<S, Schema>;
+
+type TwoLastTokens<T extends Token[]> =
+  T extends (
+    [...infer _Rest, infer SecondToLast extends Token, infer Last extends Token]
+  ) ?
+    [SecondToLast, Last]
+  : T extends [] ? never
+  : never;
+
+interface ValidNextParenMapS<T extends CollectionField[]> {
+  "(": T[number]["name"] | LParen;
+  ")": RParen | LAnd | LOr;
+}
+
+type ValidNextTokenMapS<T extends CollectionField[]> = ValidNextParenMapS<T> &
+  ValidNextOperatorMap<T>;
+
+interface OperatorMapS<Schema extends OmitDefaultSortingField<Collection>> {
+  "(": {
+    valid: Extract<Token, ValidNextTokenMapS<ExtractFields<Schema>>["("]>;
+    empty: false;
+  };
+  ")": {
+    valid: Extract<Token, ValidNextTokenMapS<ExtractFields<Schema>>[")"]>;
+    empty: true;
+  };
+  ":<": { valid: `${string}`; empty: false };
+  ":>": { valid: `${string}`; empty: false };
+  ":=": { valid: `${string}`; empty: false };
+  ":>=": { valid: `${string}`; empty: false };
+  ":<=": { valid: `${string}`; empty: false };
+  "!=": { valid: `${string}`; empty: false };
+  ":": { valid: `${string}`; empty: false };
+  "&&": {
+    valid:
+      | LParen
+      | ExtractFields<Schema>[number]["name"]
+      | ReferenceToken<string, string>;
+    empty: false;
+  };
+  "||": { valid: LParen | ExtractFields<Schema>[number]["name"]; empty: false };
+  ":[": {
+    valid: BrGT | BrLT | `${number}` | (`${string}` & {});
+    empty: false;
+  };
+  "]": { valid: LAnd | LOr | RParen; empty: true };
+  ">": { valid: NumToken<string>; empty: false };
+  "<": { valid: NumToken<string>; empty: false };
+  "..": { valid: NumToken<string>; empty: false };
+  ",": {
+    valid: NumToken<string> | BrGT | BrLT | LiteralToken<string>;
+    empty: false;
+  };
+}
+
+// Fix ValidNextTokenMap to handle all token types
+// Get valid next token based on current state
+type GetValidNextToken<
+  T extends Token,
+  Schema extends OmitDefaultSortingField<Collection>,
+> =
+  T extends NumToken<string> | LiteralToken<string> ? LAnd | LOr | RParen | EOF
+  : T extends Ident<string, FieldType> ? EQ | LT | GT | GTE | LTE | NEQ | Colon
+  : T extends keyof OperatorMapS<Schema> ?
+    OperatorMapS<Schema>[T]["empty" & keyof OperatorMapS<Schema>[T]] extends (
+      true
+    ) ?
+      EOF | OperatorMapS<Schema>[T]["valid" & keyof OperatorMapS<Schema>[T]]
+    : OperatorMapS<Schema>[T]["valid" & keyof OperatorMapS<Schema>[T]]
+  : "d";
+
+type AppendToken<Current extends string, Next> =
+  Next extends string | number ? `${Current}${Next}`
+  : Current extends "" ? Next
+  : never;
+
+type AutoComplete<
+  S extends string,
+  Schema extends OmitDefaultSortingField<Collection>,
+> = AppendToken<
+  S,
+  GetValidNextToken<TwoLastTokens<StringToTokens<S, Schema>>[1], Schema>
+>;
+
+export declare function testFilter<
+  const S extends string,
+  Schema extends OmitDefaultSortingField<Collection>,
+>(
+  schema: Schema,
+  s: S extends "" ? S | AutoComplete<S, Schema> : AutoComplete<S, Schema>,
+): Parse<S, Schema>;
