@@ -13,8 +13,27 @@ type OmitDefaultSortingField<T> = Omit<T, "default_sorting_field">;
  */
 type Recurse<T> = T extends infer R ? R : never;
 
+type ExcludeFromTuple<T extends unknown[], U extends unknown[]> =
+  T extends [infer F, ...infer R] ?
+    F extends U[number] ?
+      ExcludeFromTuple<R, U>
+    : [F, ...ExcludeFromTuple<R, U>]
+  : [];
+
+type IntersectTuples<T extends unknown[], U extends unknown[]> =
+  T extends [infer F, ...infer R] ?
+    F extends U[number] ?
+      [F, ...IntersectTuples<R, U>]
+    : IntersectTuples<R, U>
+  : [];
+
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export type { OmitDefaultSortingField, Recurse };
+export type {
+  OmitDefaultSortingField,
+  Recurse,
+  ExcludeFromTuple,
+  IntersectTuples,
+};
 
 export { sleep };
