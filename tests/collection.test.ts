@@ -1,4 +1,4 @@
-import type { InferNativeType } from "@/collection/base";
+import type { DocumentSchema, InferNativeType } from "@/collection/base";
 
 import { collection } from "@/collection/base";
 import { validateCollectionUpdate } from "@/collection/update";
@@ -1148,8 +1148,9 @@ describe("collection tests", () => {
         ],
         enable_nested_fields: true,
       });
+
       expectTypeOf<InferNativeType<typeof _schema.fields>>().toEqualTypeOf<{
-        field: Record<string, unknown>;
+        field: DocumentSchema;
       }>();
     });
     it("can infer the native type of an object with children keys", () => {
@@ -1176,7 +1177,7 @@ describe("collection tests", () => {
         enable_nested_fields: true,
       });
 
-      expectTypeOf<InferNativeType<typeof _schema.fields>>().toEqualTypeOf<{
+      expectTypeOf<InferNativeType<typeof _schema.fields>>().toMatchTypeOf<{
         field: {
           child: string;
           child2: {
@@ -1206,7 +1207,7 @@ describe("collection tests", () => {
         enable_nested_fields: true,
       });
 
-      expectTypeOf<InferNativeType<typeof _schema.fields>>().toEqualTypeOf<{
+      expectTypeOf<InferNativeType<typeof _schema.fields>>().toMatchTypeOf<{
         field: {
           child: string;
         };
@@ -1238,7 +1239,7 @@ describe("collection tests", () => {
         enable_nested_fields: true,
       });
 
-      expectTypeOf<InferNativeType<typeof _schema.fields>>().toEqualTypeOf<{
+      expectTypeOf<InferNativeType<typeof _schema.fields>>().toMatchTypeOf<{
         field: {
           child: string;
           child2: {

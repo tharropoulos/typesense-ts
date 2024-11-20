@@ -1,4 +1,4 @@
-import type { OmitDefaultSortingField } from "@/lib/utils";
+import type { ExcludeFromTuple, OmitDefaultSortingField } from "@/lib/utils";
 
 /**
  * All field types that can be used in a collection schema.
@@ -54,13 +54,14 @@ interface FieldTypeToNativeTypeMap {
   auto: unknown;
   "string*": string;
   image: string;
+  object: DocumentSchema;
 }
 
 /**
  * A type that infers the native type of a field.
  * @template T The field.
  */
-type InferNativeTypeForField<T extends CollectionField> =
+export type InferNativeTypeForField<T extends CollectionField> =
   T["optional"] extends true ?
     | FieldTypeToNativeTypeMap[T["type"] & keyof FieldTypeToNativeTypeMap]
     | undefined
@@ -180,9 +181,7 @@ type QueryableFields<T extends CollectionField[]> = {
 type CollectionFieldFromTuple<
   Names extends readonly string[],
   Fields extends CollectionField[],
-> = {
-  [K in keyof Names]: Extract<Fields[number], { name: Names[K] }>;
-};
+> = { [K in keyof Names]: Extract<Fields[number], { name: Names[K] }> };
 
 /**
  * Helper type that extracts the names of fields that have the `infix` parameter set to `true`.
@@ -522,40 +521,218 @@ function collection<
   return schema as CollectionCreate<Fields, Name, DefaultSort>;
 }
 
-type HasParentObject<T extends CollectionField[], Path extends string> =
-  Path extends `${infer First}.${infer _Rest}` ?
-    Extract<T[number], { name: First; type: "object" }> extends never ?
-      false
-    : true
-  : true;
+/**
+ * A type that splits a string on a dot.
+ */
+type SplitOnDot<S extends string> =
+  S extends `${infer First}.${infer Rest}` ? [First, ...SplitOnDot<Rest>] : [S];
+
+/**
+ * A type that joins an array of strings on a dot.
+ * @template T The array of strings.
+ * @template Acc The accumulator.
+ * @example
+ * type X = Join<["a", "b", "c"]>;
+ * //   ^? type X = ["a", "a.b", "a.b.c"]
+ */
+type Join<T extends string[], Acc extends string = ""> =
+  T extends [] ? []
+  : T extends [infer First] ? [`${Acc}${First & string}`]
+  : T extends [infer First extends string, ...infer Rest extends string[]] ?
+    [`${Acc}${First}`, ...Join<Rest, `${Acc}${First}.`>]
+  : [];
+
+/**
+ * Extracts the dot levels up to the sting passed into separate strings and returns them
+ * in a tuple.
+ * @template S The string to extract the dot levels from.
+ * @example
+ * type X = DotLevels<"a.b.c.d">;
+ * //   ^? type X = ["a", "a.b", "a.b.c"]
+ */
+type DotLevels<S extends string> = ExcludeFromTuple<Join<SplitOnDot<S>>, [S]>;
+
+/**
+ * A type that finds the top object field in a nested field path.
+ * Needed for differentiating nested objects from flattened dot-separated fields.
+ * @template Fields The collection's fields.
+ * @template Paths The dot-separated field path.
+ * @template CurrentPath The current path.
+ * @example
+ * const schema = collection({
+ *   fields: [
+ *     { name: "a", type: "object" },
+ *     { name: "a.b", type: "object" },
+ *     { name: "a.b.c", type: "object" },
+ *     { name: "a.b.c.d", type: "string[]" },
+ *     { name: "a.c", type: "string" },
+ *   ],
+ *   name: "test",
+ *   enable_nested_fields: true,
+ * });
+ *
+ * type X = FindBreakingPoint<typeof schema.fields, DotLevels<"a.b.c.d">>;
+ * //   ^? type X = "a"
+ * type Y = FindBreakingPoint<typeof schema.fields, DotLevels<"a.c">>;
+ * //   ^? type Y = ""
+ */
+type FindBreakingPoint<
+  Fields extends CollectionField[],
+  Paths extends string[],
+  CurrentPath extends string = "",
+> =
+  Paths extends [...infer Head extends string[], infer Tail extends string] ?
+    Extract<Fields[number], { name: Tail }> extends never ?
+      "" // Parent doesn't exist at all
+    : Extract<Fields[number], { name: Tail; type: "object" }> extends never ?
+      CurrentPath // Parent exists but isn't an object
+    : FindBreakingPoint<Fields, Head, Tail>
+  : CurrentPath;
+
+/**
+ * A type that checks if a field has children.
+ * @template Fields The collection's fields.
+ * @template ParentName The name of the parent field.
+ * @example
+ * const schema = collection({
+ *  fields: [
+ *   { name: "a", type: "object" },
+ *   { name: "a.b", type: "string" },
+ *   { name: "c", type: "object"},
+ *  ],
+ *  name: "test",
+ *  enable_nested_fields: true,
+ * });
+ *
+ * type X = HasChildren<typeof schema.fields, "a">;
+ * //   ^? type X = true
+ * type Y = HasChildren<typeof schema.fields, "c">;
+ * //   ^? type Y = never
+ */
+type HasChildren<Fields extends CollectionField[], ParentName extends string> =
+  Fields[number] extends infer Field ?
+    Field extends CollectionField ?
+      Field["name"] extends `${ParentName}.${string}` ?
+        true
+      : never
+    : never
+  : never;
+
+type UnionToIntersection<U> =
+  (U extends unknown ? (k: U) => void : never) extends (k: infer I) => void ? I
+  : never;
+
+/**
+ * A type that constructs a hierarchical type from a collection schema.
+ * @template Fields The collection's fields.
+ * @template Field The current field.
+ * @template FullPath The full path of the field.
+ * @example
+ * const schema = collection({
+ *  fields: [
+ *  { name: "a", type: "object" },
+ *  { name: "a.b", type: "object" },
+ *  { name: "a.b.c", type: "object" },
+ *  { name: "a.b.c.d", type: "string[]" },
+ *  { name: "a.c", type: "string" },
+ *  ],
+ *  name: "test",
+ *  enable_nested_fields: true,
+ * });
+ *
+ * type X = ConstructHierarchicalType<typeof schema.fields, "a.b.c.d">;
+ * //   ^? type X = {
+ * //     a: {
+ * //       b: {
+ * //         c: {
+ * //           d: string[];
+ * //         };
+ * //       };
+ * //     };
+ * //   }
+ * type Y = ConstructHierarchicalType<typeof schema.fields, "a.c">;
+ * //   ^? type Y = {
+ * //     a: {
+ * //       c: string;
+ * //     };
+ */
+export type ConstructHierarchicalType<
+  Fields extends CollectionField[],
+  Field extends string,
+  FullPath extends string = Field,
+> =
+  Field extends `${infer First}.${infer Rest}` ?
+    Rest extends `${string}.${string}` ?
+      Record<First, ConstructHierarchicalType<Fields, Rest, FullPath>>
+    : Record<
+        First,
+        Record<
+          Rest,
+          InferNativeTypeForField<
+            CollectionFieldFromTuple<[FullPath], Fields>[0]
+          >
+        >
+      >
+  : Record<
+      Field,
+      InferNativeTypeForField<CollectionFieldFromTuple<[FullPath], Fields>[0]>
+    >;
+
+/**
+ * A type that infers the schema type of a collection field.
+ */
+type InferNestedStructure<
+  Fields extends CollectionField[],
+  Field extends string,
+  BreakAt extends string = FindBreakingPoint<Fields, DotLevels<Field>>,
+> =
+  Field extends `${BreakAt}.${infer Rest}` ?
+    Record<BreakAt, ConstructHierarchicalType<Fields, Rest, Field>>
+  : Record<
+      Field,
+      InferNativeTypeForField<CollectionFieldFromTuple<[Field], Fields>[0]>
+    >;
 
 /**
  * A type that infers the native type of a field schema.
  * @template T The collection's fields.
- * @template Prefix The prefix used for nested objects.
+ * @example
+ * const schema = collection({
+ * fields: [
+ *  { name: "age", type: "int32" },
+ *  { name: "name", type: "string" },
+ *  { name: "address", type: "object" },
+ *  { name: "address.city", type: "string" },
+ *  { name: "address.zip", type: "int32" },
+ *  { name: "address.geo", type: "geopoint" },
+ *  ],
+ * name: "test",
+ * enable_nested_fields: true,
+ * });
+ *
+ * type X = InferNativeType<typeof schema.fields>;
+ * //   ^? type X = {
+ * //     age: number;
+ * //     name: string;
+ * //     address: {
+ * //       city: string;
+ * //       zip: number;
+ * //       geo: [number, number];
+ * //     };
+ * //   }
+ *
  */
-type InferNativeType<
-  T extends CollectionField<string, string>[],
-  Prefix extends string = "",
-> = {
-  [K in T[number]["name"] as K extends `${Prefix}${infer Key}` ?
-    HasParentObject<T, K> extends true ?
-      Key extends `${infer Parent}.${string}` ?
-        Parent
-      : Key
-    : Key
-  : never]: K extends `${Prefix}${infer Key}` ?
-    HasParentObject<T, K> extends true ?
-      Key extends `${infer Parent}.${string}` ?
-        InferNativeType<T, `${Prefix}${Parent}.`>
-      : T[number] extends { name: K; type: "object" } ?
-        T[number]["name"] extends `${K}.${string}` ?
-          InferNativeType<T, `${K}.`>
-        : Record<string, unknown>
-      : InferNativeTypeForField<Extract<T[number], { name: K }>>
-    : InferNativeTypeForField<Extract<T[number], { name: K }>>
-  : never;
-};
+type InferNativeType<Fields extends CollectionField[]> = UnionToIntersection<
+  Fields[number] extends infer Field ?
+    Field extends CollectionField ?
+      Field["type"] extends "object" ?
+        HasChildren<Fields, Field["name"]> extends never ?
+          InferNestedStructure<Fields, Field["name"]>
+        : never
+      : InferNestedStructure<Fields, Field["name"]>
+    : never
+  : never
+>;
 
 /**
  * A type that checks if a field is referenced by another field in a foreign collection.
@@ -635,7 +812,9 @@ export type {
   DeleteOptions,
   FacetableFieldKeys,
   FieldType,
+  DotLevels,
   FieldTypeMap,
+  FindBreakingPoint,
   GlobalCollections,
   InferNativeType,
   InfixableFieldKeys,
