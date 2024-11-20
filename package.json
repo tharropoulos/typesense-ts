@@ -6,14 +6,16 @@
   "scripts": {
     "test": "vitest --typecheck --coverage",
     "format": "prettier --check . --ignore-path .gitignore",
-    "type-check": "tsc --noEmit",
-    "lint": "eslint "
+    "type-check": "tsc -p tsconfig.json --generateTrace ./buildtrace --incremental false",
+    "lint": "eslint ",
+    "analyze": "analyze-trace ./buildtrace"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
     "@ianvs/prettier-plugin-sort-imports": "^4.3.1",
     "@types/eslint__js": "^8.42.3",
     "@types/node": "^22.8.4",
+    "@typescript/analyze-trace": "^0.10.1",
     "@vitest/coverage-v8": "2.1.4",
     "docker-compose": "^1.1.0",
     "eslint": "^9.13.0",
