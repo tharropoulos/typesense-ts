@@ -503,7 +503,11 @@ function collection<
     | undefined = undefined,
 >(
   schema: Omit<
-    CollectionCreate<Fields, Name, DefaultSort>,
+    CollectionCreate<
+      [{ name: "id"; type: "string" }, ...Fields],
+      Name,
+      DefaultSort
+    >,
     "fields" | "default_sorting_field"
   > & {
     name: Name;
@@ -517,8 +521,16 @@ function collection<
       : Fields[K];
     };
   },
-): CollectionCreate<Fields, Name, DefaultSort> {
-  return schema as CollectionCreate<Fields, Name, DefaultSort>;
+): CollectionCreate<
+  [{ name: "id"; type: "string" }, ...Fields],
+  Name,
+  DefaultSort
+> {
+  return schema as CollectionCreate<
+    [{ name: "id"; type: "string" }, ...Fields],
+    Name,
+    DefaultSort
+  >;
 }
 
 /**

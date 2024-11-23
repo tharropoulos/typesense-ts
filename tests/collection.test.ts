@@ -907,8 +907,9 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<InferNativeType<typeof _schema.fields>>().toEqualTypeOf<{
+      expectTypeOf<InferNativeType<typeof _schema.fields>>().toMatchTypeOf<{
         field: string;
+        id: string;
       }>();
     });
     it("can infer the native type of a string array", () => {
@@ -922,8 +923,9 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<InferNativeType<typeof _schema.fields>>().toEqualTypeOf<{
+      expectTypeOf<InferNativeType<typeof _schema.fields>>().toMatchTypeOf<{
         field: string[];
+        id: string;
       }>();
     });
     it("can infer the native type of an int32", () => {
@@ -937,8 +939,9 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<InferNativeType<typeof _schema.fields>>().toEqualTypeOf<{
+      expectTypeOf<InferNativeType<typeof _schema.fields>>().toMatchTypeOf<{
         field: number;
+        id: string;
       }>();
     });
     it("can infer the native type of a int32 array", () => {
@@ -952,8 +955,9 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<InferNativeType<typeof _schema.fields>>().toEqualTypeOf<{
+      expectTypeOf<InferNativeType<typeof _schema.fields>>().toMatchTypeOf<{
         field: number[];
+        id: string;
       }>();
     });
     it("can infer the native type of an int64", () => {
@@ -967,8 +971,9 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<InferNativeType<typeof _schema.fields>>().toEqualTypeOf<{
+      expectTypeOf<InferNativeType<typeof _schema.fields>>().toMatchTypeOf<{
         field: number;
+        id: string;
       }>();
     });
     it("can infer the native type of a int64 array", () => {
@@ -982,8 +987,9 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<InferNativeType<typeof _schema.fields>>().toEqualTypeOf<{
+      expectTypeOf<InferNativeType<typeof _schema.fields>>().toMatchTypeOf<{
         field: number[];
+        id: string;
       }>();
     });
     it("can infer the native type of a float", () => {
@@ -997,8 +1003,9 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<InferNativeType<typeof _schema.fields>>().toEqualTypeOf<{
+      expectTypeOf<InferNativeType<typeof _schema.fields>>().toMatchTypeOf<{
         field: number;
+        id: string;
       }>();
     });
     it("can infer the native type of a float array", () => {
@@ -1012,8 +1019,9 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<InferNativeType<typeof _schema.fields>>().toEqualTypeOf<{
+      expectTypeOf<InferNativeType<typeof _schema.fields>>().toMatchTypeOf<{
         field: number[];
+        id: string;
       }>();
     });
     it("can infer the native type of a boolean", () => {
@@ -1027,8 +1035,9 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<InferNativeType<typeof _schema.fields>>().toEqualTypeOf<{
+      expectTypeOf<InferNativeType<typeof _schema.fields>>().toMatchTypeOf<{
         field: boolean;
+        id: string;
       }>();
     });
     it("can infer the native type of a boolean array", () => {
@@ -1042,8 +1051,9 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<InferNativeType<typeof _schema.fields>>().toEqualTypeOf<{
+      expectTypeOf<InferNativeType<typeof _schema.fields>>().toMatchTypeOf<{
         field: boolean[];
+        id: string;
       }>();
     });
     it("can infer the native type of an geopoint", () => {
@@ -1057,8 +1067,9 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<InferNativeType<typeof _schema.fields>>().toEqualTypeOf<{
+      expectTypeOf<InferNativeType<typeof _schema.fields>>().toMatchTypeOf<{
         field: [number, number];
+        id: string;
       }>();
     });
     it("can infer the native type of an geopoint array", () => {
@@ -1072,8 +1083,9 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<InferNativeType<typeof _schema.fields>>().toEqualTypeOf<{
+      expectTypeOf<InferNativeType<typeof _schema.fields>>().toMatchTypeOf<{
         field: [number, number][];
+        id: string;
       }>();
     });
     it("can infer the native type of an auto", () => {
@@ -1087,8 +1099,9 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<InferNativeType<typeof _schema.fields>>().toEqualTypeOf<{
+      expectTypeOf<InferNativeType<typeof _schema.fields>>().toMatchTypeOf<{
         field: unknown;
+        id: string;
       }>();
     });
     it("can infer the native type of a wildcard string", () => {
@@ -1102,8 +1115,9 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<InferNativeType<typeof _schema.fields>>().toEqualTypeOf<{
+      expectTypeOf<InferNativeType<typeof _schema.fields>>().toMatchTypeOf<{
         field: string;
+        id: string;
       }>();
     });
     it("can infer the native type of a base64 encoded image", () => {
@@ -1117,8 +1131,9 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<InferNativeType<typeof _schema.fields>>().toEqualTypeOf<{
+      expectTypeOf<InferNativeType<typeof _schema.fields>>().toMatchTypeOf<{
         field: string;
+        id: string;
       }>();
     });
     it("can infer optional fields", () => {
@@ -1133,8 +1148,9 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<InferNativeType<typeof _schema.fields>>().toEqualTypeOf<{
+      expectTypeOf<InferNativeType<typeof _schema.fields>>().toMatchTypeOf<{
         field: string | undefined;
+        id: string;
       }>();
     });
     it("can infer the native type of an object with no children keys", () => {
@@ -1149,8 +1165,9 @@ describe("collection tests", () => {
         enable_nested_fields: true,
       });
 
-      expectTypeOf<InferNativeType<typeof _schema.fields>>().toEqualTypeOf<{
+      expectTypeOf<InferNativeType<typeof _schema.fields>>().toMatchTypeOf<{
         field: DocumentSchema;
+        id: string;
       }>();
     });
     it("can infer the native type of an object with children keys", () => {

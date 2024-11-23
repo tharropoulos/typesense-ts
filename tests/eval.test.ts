@@ -14,7 +14,6 @@ import { describe, expectTypeOf, it } from "vitest";
 const _usersSchema = collection({
   name: "users",
   fields: [
-    { type: "string", optional: false, name: "id" },
     { type: "string", optional: false, name: "name" },
     { type: "int32", optional: false, name: "age", sort: true },
     { type: "string", optional: true, name: "email" },
