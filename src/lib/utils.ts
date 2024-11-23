@@ -27,6 +27,24 @@ type IntersectTuples<T extends unknown[], U extends unknown[]> =
     : IntersectTuples<R, U>
   : [];
 
+type RemoveType<T extends readonly unknown[], E> =
+  T extends [infer F, ...infer R] ?
+    [F] extends [E] ?
+      RemoveType<R, E>
+    : [F, ...RemoveType<R, E>]
+  : [];
+
+type DeepPartial<T> = {
+  [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K];
+};
+
+type TupleIncludes<T extends readonly unknown[] | undefined, V> =
+  T extends readonly [infer F, ...infer R] ?
+    F extends V ?
+      true
+    : TupleIncludes<R, V>
+  : false;
+
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export type {
@@ -34,6 +52,9 @@ export type {
   Recurse,
   ExcludeFromTuple,
   IntersectTuples,
+  RemoveType,
+  TupleIncludes,
+  DeepPartial,
 };
 
 export { sleep };
