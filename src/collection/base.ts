@@ -565,11 +565,11 @@ type SplitOnDot<S extends string> =
  * type X = Join<["a", "b", "c"]>;
  * //   ^? type X = ["a", "a.b", "a.b.c"]
  */
-type Join<T extends string[], Acc extends string = ""> =
+type JoinOnDot<T extends string[], Acc extends string = ""> =
   T extends [] ? []
   : T extends [infer First] ? [`${Acc}${First & string}`]
   : T extends [infer First extends string, ...infer Rest extends string[]] ?
-    [`${Acc}${First}`, ...Join<Rest, `${Acc}${First}.`>]
+    [`${Acc}${First}`, ...JoinOnDot<Rest, `${Acc}${First}.`>]
   : [];
 
 /**
@@ -580,7 +580,10 @@ type Join<T extends string[], Acc extends string = ""> =
  * type X = DotLevels<"a.b.c.d">;
  * //   ^? type X = ["a", "a.b", "a.b.c"]
  */
-type DotLevels<S extends string> = ExcludeFromTuple<Join<SplitOnDot<S>>, [S]>;
+type DotLevels<S extends string> = ExcludeFromTuple<
+  JoinOnDot<SplitOnDot<S>>,
+  [S]
+>;
 
 /**
  * A type that finds the top object field in a nested field path.
