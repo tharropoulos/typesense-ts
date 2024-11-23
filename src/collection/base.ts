@@ -171,9 +171,12 @@ type FacetableFieldKeys<T extends CollectionField[]> = T[number]["name"] &
   }[T[number]["name"]];
 
 type QueryableFields<T extends CollectionField[]> = {
-  [K in keyof T]: T[K] extends { type: infer Type; name: string } ?
+  [K in keyof T]: T[K] extends { type: infer Type; name: infer Name } ?
     Type extends "string" | "string[]" ?
-      T[K]
+      Name extends "id" ? undefined
+      : T[K] extends { index: false } ? undefined
+      : T[K] extends { reference: string } ? undefined
+      : T[K]
     : undefined
   : undefined;
 };
