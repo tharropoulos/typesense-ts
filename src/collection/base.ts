@@ -1,4 +1,8 @@
-import type { ExcludeFromTuple, OmitDefaultSortingField } from "@/lib/utils";
+import type {
+  ExcludeFromTuple,
+  OmitDefaultSortingField,
+  RemoveType,
+} from "@/lib/utils";
 
 /**
  * All field types that can be used in a collection schema.
@@ -180,6 +184,17 @@ type QueryableFields<T extends CollectionField[]> = {
     : undefined
   : undefined;
 };
+
+type ObjectFields<T extends CollectionField[]> = RemoveType<
+  T extends [infer First, ...infer Rest] ?
+    [
+      First extends { type: "object" | "object[]"; name: infer Name } ? Name
+      : never,
+      ...(Rest extends CollectionField[] ? ObjectFields<Rest> : []),
+    ]
+  : [],
+  never
+>;
 
 type CollectionFieldFromTuple<
   Names extends readonly string[],
@@ -829,6 +844,7 @@ export type {
   FieldType,
   DotLevels,
   FieldTypeMap,
+  ObjectFields,
   FindBreakingPoint,
   GlobalCollections,
   InferNativeType,
