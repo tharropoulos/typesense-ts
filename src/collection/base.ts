@@ -858,6 +858,7 @@ export type {
   QueryableFields,
   CollectionFieldFromTuple,
   CounterFields,
+  UnionToIntersection,
 };
 
 export { collection };
