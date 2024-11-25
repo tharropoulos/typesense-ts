@@ -9,6 +9,7 @@ import type {
 import { collection } from "@/collection/base";
 import { configure } from "@/config";
 import { createCollection, search } from "@/http/fetch/collection";
+import { upAll } from "docker-compose";
 import {
   afterAll,
   beforeAll,
@@ -17,7 +18,6 @@ import {
   expectTypeOf,
   it,
 } from "vitest";
-import { upAll } from "docker-compose";
 
 const isCi = process.env.CI;
 
@@ -374,7 +374,7 @@ describe("search tests", () => {
             undefined,
             ["foo"]
           >
-        >().toEqualTypeOf<["bar", "id"]>();
+        >().toEqualTypeOf<["id", "bar"]>();
       });
 
       it("should return all fields when both params are undefined", () => {
@@ -392,7 +392,7 @@ describe("search tests", () => {
             undefined,
             undefined
           >
-        >().toEqualTypeOf<["foo", "bar", "id"]>();
+        >().toEqualTypeOf<["id", "foo", "bar"]>();
       });
 
       it("should handle object fields correctly", () => {
