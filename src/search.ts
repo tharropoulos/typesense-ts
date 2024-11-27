@@ -777,8 +777,6 @@ type SearchResponse<
       transcribed_query?: string;
     };
   };
-  error?: string;
-  code?: number;
 } & (TupleIncludes<ExcludeFieldsTuple, "out_of"> extends true ? {}
 : { out_of: number }) &
   (TupleIncludes<ExcludeFieldsTuple, "search_time_ms"> extends true ? {}
