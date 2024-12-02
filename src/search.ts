@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import type {
   Collection,
@@ -339,6 +340,52 @@ type SearchParams<
         }
     : `[Error on filter_by]: ${ParseFilter<FilterBy, Schema> & string}`
   : `[Error on sort_by]: ${ParseSort<SortBy, Schema> & string}`;
+
+/**
+ * Extracts array keys from SearchParams type that can be joined into strings
+ * @template Schema The collection schema (defaults to any)
+ */
+type ArraySearchParams<
+  Schema extends Collection = any,
+  FilterBy extends string = string,
+  SortBy extends string = string,
+  Q extends "*" | (string & {}) = "*" | (string & {}),
+  QueryByTuple extends QueryBy<ExtractFields<Schema>> = any,
+> = {
+  [K in keyof SearchParams<
+    Schema,
+    FilterBy,
+    SortBy,
+    Q,
+    QueryByTuple
+  >]: NonNullable<
+    SearchParams<Schema, FilterBy, SortBy, Q, QueryByTuple>[K]
+  > extends any[] | TupleOfLength<any> ?
+    K
+  : NonNullable<
+    SearchParams<Schema, FilterBy, SortBy, Q, QueryByTuple>[K]
+  > extends infer T ?
+    T extends TupleOfLength<any, any> ? K
+    : T extends TupleOfLength<any, any> ? K
+    : never
+  : never;
+}[keyof SearchParams<Schema, FilterBy, SortBy, Q, QueryByTuple>];
+
+const ARRAY_KEYS = {
+  query_by: true,
+  highlight_fields: true,
+  include_fields: true,
+  exclude_fields: true,
+  facet_by: true,
+  group_by: true,
+  pinned_hits: true,
+  hidden_hits: true,
+  infix: true,
+  prefix: true,
+  query_by_weights: true,
+  stopwords: true,
+  num_typos: true,
+} as const satisfies Record<NonNullable<ArraySearchParams>, true>;
 
 interface BaseHighlightV1<T extends CollectionField> {
   field: T["name"];
@@ -817,3 +864,5 @@ export type {
   ExtractFields,
   SearchResponse,
 };
+
+export { ARRAY_KEYS };

@@ -21,6 +21,7 @@ import type {
 } from "@/search";
 
 import { makeRequest } from "@/http/fetch/request";
+import { ARRAY_KEYS } from "@/search";
 
 async function createCollection<
   const T extends OmitDefaultSortingField<Collection>,
@@ -188,7 +189,7 @@ async function search<
   >
 > {
   for (const param in searchParams) {
-    if (Array.isArray(param)) {
+    if (Array.isArray(param) && Object.keys(ARRAY_KEYS).includes(param)) {
       param.join(",");
     }
   }

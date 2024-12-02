@@ -2,6 +2,7 @@ import type { Configuration } from "@/config";
 import type { MultiSearchResultEntry } from "@/multisearch";
 
 import { makeRequest } from "@/http/fetch/request";
+import { ARRAY_KEYS } from "@/search";
 
 interface MultiSearchQueryParams {
   limit_multi_searches?: number;
@@ -41,7 +42,7 @@ interface MultiSearchQueryParams {
  * //               ]
  * //         }
  */
-async function multisearch<const Searches extends readonly unknown[]>(
+async function multisearch<const Searches extends readonly object[]>(
   searchParams: {
     searches: [...Searches];
   },
@@ -53,11 +54,8 @@ async function multisearch<const Searches extends readonly unknown[]>(
   {
     for (const search of searchParams.searches) {
       for (const param in search) {
-        if (Array.isArray(search[param])) {
-          search[param] = search[param].join(",") as Searches[number][Extract<
-            keyof Searches[number],
-            string
-          >];
+        if (Array.isArray(param) && Object.keys(ARRAY_KEYS).includes(param)) {
+          param.join(",");
         }
       }
     }
