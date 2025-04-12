@@ -253,6 +253,7 @@ type ReferenceField<T extends string = string> = BaseField<T> & {
   hnsw_params?: never;
   vec_dist?: never;
   reference: DotSeparatedString;
+  async_reference?: boolean;
 };
 
 /**
