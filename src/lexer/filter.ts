@@ -370,7 +370,89 @@ type IsValidToken<
   : never;
 
 /**
+ * Represents information about a join between collections
+ */
+export interface JoinInfo {
+  sourceCollection: GlobalCollections[keyof GlobalCollections]["name"];
+  targetCollection: GlobalCollections[keyof GlobalCollections]["name"];
+  clause: string;
+  nested?: JoinInfo[];
+}
+
+/**
+ * Modified parse function that returns both the validation result and tracked joins
+ * @template T - The input string to parse.
+ * @template Schema - The collection schema to use for parsing.
+ */
+export interface ParseWithJoinTracking<
+  T extends string,
+  Schema extends OmitDefaultSortingField<Collection>,
+> {
+  isValid: Parse<T, Schema> extends true ? true : false;
+  errors: Parse<T, Schema> extends string ? Parse<T, Schema> : never;
+  joins: ExtractJoins<Tokenizer<T, Schema>, Schema>;
+}
+
+/**
+ * Extracts all joins from the tokenized filter
+ * @template TokenArray - The array of tokens.
+ * @template Schema - The collection schema.
+ */
+type ExtractJoins<
+  TokenArray extends Token[],
+  Schema extends OmitDefaultSortingField<Collection>,
+  Acc extends JoinInfo[] = [],
+> =
+  TokenArray extends (
+    [
+      ReferenceToken<infer Collection, infer Clause>,
+      ...infer Rest extends Token[],
+    ]
+  ) ?
+    // Extract nested joins from the clause
+    ExtractNestedJoins<Clause, Collection> extends (
+      infer NestedJoins extends JoinInfo[]
+    ) ?
+      ExtractJoins<
+        Rest,
+        Schema,
+        [
+          ...Acc,
+          {
+            sourceCollection: Schema["name"];
+            targetCollection: Collection;
+            clause: Clause;
+            nested: NestedJoins;
+          },
+        ]
+      >
+    : never
+  : TokenArray extends [Token, ...infer Rest extends Token[]] ?
+    ExtractJoins<Rest, Schema, Acc>
+  : Acc;
+
+/**
+ * Extracts nested joins from a join clause
+ * @template Clause - The join clause.
+ * @template Collection - The collection being joined.
+ * @template Schema - The parent collection schema.
+ */
+type ExtractNestedJoins<
+  Clause extends string,
+  Collection extends string,
+  Acc extends JoinInfo[] = [],
+> =
+  Collection extends keyof GlobalCollections ?
+    Tokenizer<Clause, GlobalCollections[Collection]> extends (
+      infer ClauseTokens extends Token[]
+    ) ?
+      ExtractJoins<ClauseTokens, GlobalCollections[Collection], Acc>
+    : Acc
+  : Acc;
+
+/**
  * Checks if the join is valid and if the next token after a join is a valid token.
+ * Also tracks join information for later use.
  * @template Schema - The collection schema to check.
  * @template JoinedCollectionName - The name of the joined collection.
  * @template JoinClause - The clause for the join.

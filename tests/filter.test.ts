@@ -6,6 +6,7 @@ import type {
   IsNextTokenValid,
   IsValidArray,
   ParseFilter,
+  ParseWithJoinTracking,
   ReadEscapeToken,
   ReadToken,
   TypeToOperatorMap,
@@ -785,6 +786,21 @@ describe("IsValidArray tests", () => {
 
 describe("ParseFilter tests", () => {
   it("should parse a valid filter string", () => {
+    type B = ParseWithJoinTracking<
+      "$posts(title:name ) && name:[`Alice`, `Bob`] || age:=30 && name:[`Alice`, `Bob`]",
+      typeof _usersSchema
+    >;
+    const a: B = {
+      isValid: true,
+      joins: [
+        {
+          sourceCollection: "users",
+          targetCollection: "posts",
+          clause: "title:name ",
+          nested: [],
+        },
+      ],
+    };
     expectTypeOf<
       ParseFilter<
         "(age := 30) && name:[`Alice(!)`, `Bob`] || (name:[Kostas, Giannis] && age:[30..20, 50]) && email:=`kostas@gmail.com` || age:=30 && name:[`Alice`, `Bob`] && email:[`john@mail.en`, Acm] && $posts(title:name && $comments(post:1 && content:An*))",
