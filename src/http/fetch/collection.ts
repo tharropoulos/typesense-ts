@@ -188,9 +188,11 @@ async function search<
     EnableV1Highlights
   >
 > {
-  for (const param in searchParams) {
-    if (Array.isArray(param) && Object.keys(ARRAY_KEYS).includes(param)) {
-      param.join(",");
+  // Ugly, but needed in order to check for holes in the searchParams object
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (Array.isArray(value) && Object.keys(ARRAY_KEYS).includes(key)) {
+      (searchParams as unknown as Record<string, unknown>)[key] =
+        value.join(",");
     }
   }
 
