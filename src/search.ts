@@ -16,6 +16,7 @@ import type {
   UnionToIntersection,
 } from "@/collection/base";
 import type { ParseFilter } from "@/lexer/filter";
+import type { ParseIncludeFields } from "@/lexer/include";
 import type { ParseSort } from "@/lexer/sort";
 import type {
   DeepPartial,
@@ -243,6 +244,17 @@ interface GroupParams<
  * //   ^? type X = ["a"] | ["b"] | ["c"]
  */
 type SubsetTuple<S extends readonly string[]> = S[number][];
+
+/**
+ * Include fields can be either regular field names or join syntax with $collection(fields)
+ * @template Fields The collection fields
+ * @template Schema The collection schema
+ */
+export type IncludeFieldsWithJoins<
+  Fields extends CollectionField[],
+  Schema extends OmitDefaultSortingField<Collection>,
+  S extends string,
+> = IncludeFields<Fields> | ParseIncludeFields<S, Schema>;
 
 /**
  * Result parameters for a search request
