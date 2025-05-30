@@ -53,9 +53,9 @@ async function multisearch<const Searches extends readonly object[]>(
 }> {
   {
     for (const search of searchParams.searches) {
-      for (const param in search) {
-        if (Array.isArray(param) && Object.keys(ARRAY_KEYS).includes(param)) {
-          param.join(",");
+      for (const [key, value] of Object.entries(search)) {
+        if (Array.isArray(value) && Object.keys(ARRAY_KEYS).includes(key)) {
+          (search as unknown as Record<string, unknown>)[key] = value.join(",");
         }
       }
     }
