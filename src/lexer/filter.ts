@@ -373,8 +373,8 @@ type IsValidToken<
  * Represents information about a join between collections
  */
 export interface JoinInfo {
-  sourceCollection: GlobalCollections[keyof GlobalCollections]["name"];
-  targetCollection: GlobalCollections[keyof GlobalCollections]["name"];
+  sourceCollection: string;
+  targetCollection: string;
   clause: string;
   nested?: JoinInfo[];
 }
