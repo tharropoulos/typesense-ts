@@ -787,19 +787,28 @@ describe("IsValidArray tests", () => {
 describe("ParseFilter tests", () => {
   it("should parse a valid filter string", () => {
     type B = ParseWithJoinTracking<
-      "$posts(title:name ) && name:[`Alice`, `Bob`] || age:=30 && name:[`Alice`, `Bob`]",
+      "$posts($comments(post=1))",
       typeof _usersSchema
     >;
-    const a: B = {
-      isValid: true,
+    const _a: B = {
+      isValid: false,
       joins: [
         {
           sourceCollection: "users",
           targetCollection: "posts",
-          clause: "title:name ",
-          nested: [],
+          clause: "$comments(post=1)",
+          nested: [
+            {
+              sourceCollection: "posts",
+              targetCollection: "comments",
+              clause: "post=1",
+              nested: [],
+            },
+          ],
         },
       ],
+      errors:
+        "[Error on filter for joined collection `posts`]: [Error on filter for joined collection `comments`]: Unknown token: =",
     };
     expectTypeOf<
       ParseFilter<
