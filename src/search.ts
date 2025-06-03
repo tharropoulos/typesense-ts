@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-empty-object-type */
 import type {
   Collection,
   CollectionField,
@@ -358,10 +356,12 @@ type SearchParams<
  * @template Schema The collection schema (defaults to any)
  */
 type ArraySearchParams<
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   Schema extends Collection = any,
   FilterBy extends string = string,
   SortBy extends string = string,
   Q extends "*" | (string & {}) = "*" | (string & {}),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   QueryByTuple extends QueryBy<ExtractFields<Schema>> = any,
 > = {
   [K in keyof SearchParams<
@@ -372,13 +372,16 @@ type ArraySearchParams<
     QueryByTuple
   >]: NonNullable<
     SearchParams<Schema, FilterBy, SortBy, Q, QueryByTuple>[K]
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   > extends any[] | TupleOfLength<any> ?
     K
   : NonNullable<
     SearchParams<Schema, FilterBy, SortBy, Q, QueryByTuple>[K]
   > extends infer T ?
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     T extends TupleOfLength<any, any> ? K
-    : T extends TupleOfLength<any, any> ? K
+    : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    T extends TupleOfLength<any, any> ? K
     : never
   : never;
 }[keyof SearchParams<Schema, FilterBy, SortBy, Q, QueryByTuple>];
@@ -836,8 +839,10 @@ type SearchResponse<
       transcribed_query?: string;
     };
   };
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 } & (TupleIncludes<ExcludeFieldsTuple, "out_of"> extends true ? {}
 : { out_of: number }) &
+  /* eslint-disable @typescript-eslint/no-empty-object-type */
   (TupleIncludes<ExcludeFieldsTuple, "search_time_ms"> extends true ? {}
   : {
       search_time_ms: number;
