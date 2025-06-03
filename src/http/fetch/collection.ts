@@ -1,9 +1,13 @@
+import type { CollectionOperations } from "@/collection";
 import type {
   ChildFields,
   Collection,
+  CollectionCreate,
   CreateOptions as CollectionCreateOptions,
   DeleteOptions as CollectionDeleteOptions,
   CollectionField,
+  DefaultSortingFields,
+  EmbeddingField,
   ExtractFields,
   FacetableFieldKeys,
   GetSchemaFromName,
@@ -24,7 +28,189 @@ import type {
 import { makeRequest } from "@/http/fetch/request";
 import { ARRAY_KEYS } from "@/search";
 
-async function createCollection<
+async function retrieveAllCollections(config: Configuration): Promise<
+  (OmitDefaultSortingField<Collection> & {
+    created_at: number;
+    num_documents: number;
+    num_memory_shards: number;
+  })[]
+> {
+  return await makeRequest({
+    endpoint: "/collections",
+    config,
+    method: "GET",
+  });
+}
+
+function collection<
+  const Fields extends CollectionField<string, string>[],
+  const Name extends string,
+  const DefaultSort extends
+    | DefaultSortingFields<Fields>
+    | undefined = undefined,
+>(
+  schema: Omit<
+    CollectionCreate<
+      [{ name: "id"; type: "string" }, ...Fields],
+      Name,
+      DefaultSort
+    >,
+    "fields" | "default_sorting_field"
+  > & {
+    name: Name;
+    default_sorting_field?: DefaultSort;
+    fields: {
+      [K in keyof Fields]: Fields[K] extends EmbeddingField ?
+        EmbeddingField<
+          Fields[K]["name"],
+          Extract<Fields[number], { type: "string" }>["name"]
+        >
+      : Fields[K];
+    };
+  },
+  config: Configuration,
+): CollectionOperations<
+  CollectionCreate<
+    [{ name: "id"; type: "string" }, ...Fields],
+    Name,
+    DefaultSort
+  >,
+  Fields,
+  Name,
+  DefaultSort
+> {
+  const collectionSchema = {
+    ...schema,
+    fields: [{ name: "id", type: "string" }, ...schema.fields],
+  } as Collection<
+    [{ name: "id"; type: "string" }, ...Fields],
+    Name,
+    DefaultSort
+  >;
+
+  return {
+    schema: collectionSchema,
+
+    async create(options?: CollectionCreateOptions) {
+      const params = new URLSearchParams(options);
+
+      return await makeRequest({
+        body: collectionSchema,
+        endpoint: "/collections",
+        config,
+        method: "POST",
+        params,
+      });
+    },
+
+    async update<const T extends { fields: CollectionField[]; name: string }>(
+      collection: T,
+    ) {
+      return await makeRequest({
+        body: { fields: collection.fields },
+        endpoint: `/collections/${encodeURIComponent(collection.name)}`,
+        config,
+        method: "PATCH",
+      });
+    },
+
+    async retrieve() {
+      return await makeRequest({
+        endpoint: `/collections/${encodeURIComponent(schema.name)}`,
+        config,
+        method: "GET",
+      });
+    },
+
+    async delete(options?: CollectionDeleteOptions) {
+      if (!options) {
+        return await makeRequest({
+          endpoint: `/collections/${encodeURIComponent(schema.name)}`,
+          config,
+          method: "DELETE",
+        });
+      }
+
+      const params = new URLSearchParams(options);
+
+      return await makeRequest({
+        endpoint: `/collections/${encodeURIComponent(schema.name)}`,
+        config,
+        method: "DELETE",
+        params,
+      });
+    },
+
+    async search<
+      const FilterBy extends string,
+      const SortBy extends string,
+      const QueryByTuple extends QueryBy<Fields>,
+      const Q extends "*" | (string & {}),
+      const HighlightFieldsTuple extends
+        | "none"
+        | SubsetTuple<QueryByTuple>
+        | undefined = undefined,
+      const IncludeFieldsTuple extends
+        | IncludeFields<Fields>
+        | undefined = undefined,
+      const ExcludeFieldsTuple extends
+        | ExcludeFields<Fields>
+        | undefined = undefined,
+      const FacetByTuple extends
+        | FacetableFieldKeys<Fields>[]
+        | undefined = undefined,
+      const FacetReturnParents extends
+        | FacetableFieldKeys<ChildFields<Fields>>[]
+        | undefined = undefined,
+      const GroupByTuple extends
+        | FacetableFieldKeys<Fields>[]
+        | undefined = undefined,
+      const QueryByLength extends number = LengthOf<QueryByTuple>,
+      const Fields extends CollectionField[] = ExtractFields<
+        typeof collectionSchema
+      >,
+      const EnableV1Highlights extends boolean = true,
+    >(
+      searchParams: SearchParams<
+        typeof collectionSchema,
+        FilterBy,
+        SortBy,
+        Q,
+        QueryByTuple,
+        HighlightFieldsTuple,
+        IncludeFieldsTuple,
+        ExcludeFieldsTuple,
+        FacetByTuple,
+        FacetReturnParents,
+        GroupByTuple,
+        QueryByLength,
+        Fields,
+        EnableV1Highlights
+      >,
+    ) {
+      // Ugly, but needed in order to check for holes in the searchParams object
+      for (const [key, value] of Object.entries(searchParams)) {
+        if (Array.isArray(value) && Object.keys(ARRAY_KEYS).includes(key)) {
+          (searchParams as unknown as Record<string, unknown>)[key] =
+            value.join(",");
+        }
+      }
+
+      const urlParams = new URLSearchParams(
+        searchParams as unknown as Record<string, string>,
+      );
+
+      return await makeRequest({
+        endpoint: `/collections/${encodeURIComponent(schema.name)}/documents/search`,
+        config,
+        method: "GET",
+        params: urlParams,
+      });
+    },
+  };
+}
+
+async function _createCollection<
   const T extends OmitDefaultSortingField<Collection>,
 >(
   collection: T,
@@ -54,7 +240,7 @@ async function createCollection<
   });
 }
 
-async function updateCollection<
+async function _updateCollection<
   const T extends { fields: CollectionField[]; name: string },
 >(
   collection: T,
@@ -68,71 +254,7 @@ async function updateCollection<
   });
 }
 
-async function retrieveAllCollections(config: Configuration): Promise<
-  (OmitDefaultSortingField<Collection> & {
-    created_at: number;
-    num_documents: number;
-    num_memory_shards: number;
-  })[]
-> {
-  return await makeRequest({
-    endpoint: "/collections",
-    config,
-    method: "GET",
-  });
-}
-
-async function retrieveCollection<
-  Name extends GlobalCollections[keyof GlobalCollections]["name"],
->(
-  name: Name,
-  config: Configuration,
-): Promise<
-  OmitDefaultSortingField<Collection> & {
-    created_at: number;
-    num_documents: number;
-    num_memory_shards: number;
-  }
-> {
-  return await makeRequest({
-    endpoint: `/collections/${encodeURIComponent(name)}`,
-    config,
-    method: "GET",
-  });
-}
-
-async function deleteCollection<
-  Name extends GlobalCollections[keyof GlobalCollections]["name"],
->(
-  name: Name,
-  config: Configuration,
-  options?: CollectionDeleteOptions,
-): Promise<
-  Collection & {
-    created_at: number;
-    num_documents: number;
-    num_memory_shards: number;
-  }
-> {
-  if (!options) {
-    return await makeRequest({
-      endpoint: `/collections/${encodeURIComponent(name)}`,
-      config,
-      method: "DELETE",
-    });
-  }
-
-  const params = new URLSearchParams(options);
-
-  return await makeRequest({
-    endpoint: `/collections/${encodeURIComponent(name)}`,
-    config,
-    method: "DELETE",
-    params,
-  });
-}
-
-async function search<
+async function _search<
   const Name extends GlobalCollections[keyof GlobalCollections]["name"],
   const Schema extends OmitDefaultSortingField<GetSchemaFromName<Name>>,
   const FilterBy extends string,
@@ -214,11 +336,62 @@ async function search<
   });
 }
 
+async function _retrieveCollection<
+  Name extends GlobalCollections[keyof GlobalCollections]["name"],
+>(
+  name: Name,
+  config: Configuration,
+): Promise<
+  OmitDefaultSortingField<Collection> & {
+    created_at: number;
+    num_documents: number;
+    num_memory_shards: number;
+  }
+> {
+  return await makeRequest({
+    endpoint: `/collections/${encodeURIComponent(name)}`,
+    config,
+    method: "GET",
+  });
+}
+
+async function _deleteCollection<
+  Name extends GlobalCollections[keyof GlobalCollections]["name"],
+>(
+  name: Name,
+  config: Configuration,
+  options?: CollectionDeleteOptions,
+): Promise<
+  Collection & {
+    created_at: number;
+    num_documents: number;
+    num_memory_shards: number;
+  }
+> {
+  if (!options) {
+    return await makeRequest({
+      endpoint: `/collections/${encodeURIComponent(name)}`,
+      config,
+      method: "DELETE",
+    });
+  }
+
+  const params = new URLSearchParams(options);
+
+  return await makeRequest({
+    endpoint: `/collections/${encodeURIComponent(name)}`,
+    config,
+    method: "DELETE",
+    params,
+  });
+}
+
 export {
-  createCollection,
-  updateCollection,
-  retrieveCollection,
-  deleteCollection,
+  collection,
   retrieveAllCollections,
-  search,
+  _createCollection as createCollection,
+  _updateCollection as updateCollection,
+  _search as search,
+  _retrieveCollection as retrieveCollection,
+  _deleteCollection as deleteCollection,
 };
