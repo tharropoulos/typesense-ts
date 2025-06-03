@@ -1206,7 +1206,7 @@ describe("collection tests", () => {
         await schema.delete();
       });
     });
-    describe.only("update", () => {
+    describe("update", () => {
       it("can update a document via documentId", async () => {
         const schema = collection({
           name: "test",
@@ -1309,6 +1309,124 @@ describe("collection tests", () => {
         expect(retrievedDoc.title).toBe("Test Title");
         expect(retrievedDoc.id).toBe(createdDoc.id);
         await schema.delete();
+      });
+    });
+    describe("delete", () => {
+      it("can delete a document by query", async () => {
+        const schema = collection({
+          name: "test",
+          fields: [
+            {
+              type: "string",
+              name: "title",
+            },
+          ],
+        });
+
+        await schema.create();
+
+        await schema.documents.import([
+          {
+            title: "Test Title",
+            id: "1",
+          },
+          {
+            title: "Test Title 2",
+            id: "2",
+          },
+          {
+            title: "Test Title 3",
+            id: "3",
+          },
+        ]);
+
+        const retrievedDoc = await schema.retrieve();
+
+        expect(retrievedDoc.num_documents).toBe(3);
+
+        const result = await schema.documents.delete({
+          parameters: {
+            filter_by: `id:1 || id:2`,
+          },
+        });
+
+        expect(result.num_deleted).toBe(2);
+
+        const retrievedDoc2 = await schema.retrieve();
+
+        expect(retrievedDoc2.num_documents).toBe(1);
+
+        await schema.delete();
+      });
+      it("can delete a document via documentId", async () => {
+        const schema = collection({
+          name: "test",
+          fields: [
+            {
+              type: "string",
+              name: "title",
+            },
+          ],
+        });
+
+        await schema.create();
+
+        await schema.documents.create({
+          title: "Test Title",
+          id: "1",
+        });
+
+        const retrievedDoc = await schema.retrieve();
+
+        expect(retrievedDoc.num_documents).toBe(1);
+
+        const result = await schema.documents.delete({
+          documentId: "1",
+        });
+
+        expect(result.title).toBe("Test Title");
+        expect(result.id).toBe("1");
+
+        const retrievedDoc2 = await schema.retrieve();
+
+        expect(retrievedDoc2.num_documents).toBe(0);
+
+        await schema.delete();
+      });
+      it("can truncate a collection", async () => {
+        const schema = collection({
+          name: "test",
+          fields: [
+            {
+              type: "string",
+              name: "title",
+            },
+          ],
+        });
+
+        await schema.create();
+
+        await schema.documents.create({
+          title: "Test Title",
+        });
+
+        const retrievedDoc = await schema.retrieve();
+
+        expect(retrievedDoc.num_documents).toBe(1);
+
+        //TODO:
+        // This is going to fail on 27.1
+        // const result = await schema.documents.delete({
+        //   parameters: { truncate: true },
+        // });
+
+        // expect(result.num_deleted).toBe(1);
+
+        // const retrievedDoc2 = await schema.retrieve();
+
+        // expect(retrievedDoc2.num_documents).toBe(0);
+
+        // await schema.delete();
       });
     });
   });

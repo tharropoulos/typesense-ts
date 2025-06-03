@@ -11,6 +11,25 @@ export interface DocumentWriteParameters {
   action?: "create" | "update" | "upsert" | "emplace";
 }
 
+export type DocumentDeleteParameters<
+  Schema extends Collection,
+  FilterBy extends string,
+> =
+  ParseFilter<FilterBy, Schema> extends true ?
+    | {
+        filter_by: FilterBy;
+        batch_size?: number;
+        ignore_not_found?: boolean;
+        truncate?: never;
+      }
+    | {
+        filter_by?: never;
+        truncate: true;
+        batch_size?: never;
+        ignore_not_found?: never;
+      }
+  : `[Error on filter_by]: ${ParseFilter<FilterBy, Schema> & string}`;
+
 export interface DocumentImportParameters<
   Doc extends boolean,
   Id extends boolean,
@@ -75,6 +94,16 @@ export type UpdateResponse<
     }
   : InferNativeType<Schema["fields"] & CollectionField[]>;
 
+export type DeleteResponse<
+  DocId extends string | undefined,
+  Schema extends Collection,
+> =
+  DocId extends undefined ?
+    {
+      num_deleted: number;
+    }
+  : InferNativeType<Schema["fields"] & CollectionField[]>;
+
 export interface DocumentOperations<T extends Collection> {
   create<const Doc extends boolean = false, const Id extends boolean = false>(
     document: Omit<InferNativeType<T["fields"] & CollectionField[]>, "id"> & {
@@ -124,4 +153,20 @@ export interface DocumentOperations<T extends Collection> {
     documentId: string,
     config?: Configuration,
   ): Promise<InferNativeType<T["fields"] & CollectionField[]>>;
+
+  delete<
+    const FilterBy extends string,
+    const DocId extends string | undefined = undefined,
+  >(
+    params:
+      | {
+          documentId: DocId;
+          parameters?: never;
+        }
+      | {
+          documentId?: never;
+          parameters: DocumentDeleteParameters<T, FilterBy>;
+        },
+    config?: Configuration,
+  ): Promise<DeleteResponse<DocId extends undefined ? undefined : string, T>>;
 }

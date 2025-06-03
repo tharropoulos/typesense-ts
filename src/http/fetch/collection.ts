@@ -16,6 +16,7 @@ import type {
 } from "@/collection/base";
 import type { Configuration } from "@/config";
 import type {
+  DocumentDeleteParameters,
   DocumentImportParameters,
   DocumentImportResponseSuccess,
   ImportResponseFail,
@@ -152,6 +153,42 @@ function collection<
           endpoint: `/collections/${encodeURIComponent(schema.name)}/documents/${encodeURIComponent(documentId)}`,
           config: getConfiguration(config),
           method: "GET",
+        });
+      },
+
+      async delete<
+        const FilterBy extends string,
+        const DocId extends string | undefined = undefined,
+      >(
+        params:
+          | {
+              documentId: DocId;
+              parameters?: never;
+            }
+          | {
+              documentId?: never;
+              parameters: DocumentDeleteParameters<
+                typeof collectionSchema,
+                FilterBy
+              >;
+            },
+        config?: Configuration,
+      ) {
+        if (typeof params.documentId === "string") {
+          return await makeRequest({
+            endpoint: `/collections/${encodeURIComponent(schema.name)}/documents/${encodeURIComponent(params.documentId)}`,
+            config: getConfiguration(config),
+            method: "DELETE",
+          });
+        }
+
+        return await makeRequest({
+          endpoint: `/collections/${encodeURIComponent(schema.name)}/documents`,
+          config: getConfiguration(config),
+          method: "DELETE",
+          params: new URLSearchParams(
+            params.parameters as unknown as Record<string, string>,
+          ),
         });
       },
 
