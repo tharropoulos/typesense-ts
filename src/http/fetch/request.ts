@@ -12,6 +12,7 @@ async function makeRequest<TBody, TReturn>({
   body,
   params,
   endpoint,
+  isImport = false,
   currentNodeIndex = 0,
   attempt: attemptNum = 1,
 }: {
@@ -19,6 +20,7 @@ async function makeRequest<TBody, TReturn>({
   method: HttpMethod;
   body?: TBody;
   params?: URLSearchParams;
+  isImport?: boolean;
   endpoint?: `/${string}`;
   currentNodeIndex?: number;
   attempt?: number;
@@ -36,15 +38,21 @@ async function makeRequest<TBody, TReturn>({
     const response = await fetch(url, {
       method,
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": isImport ? "text/plain" : "application/json",
         "X-TYPESENSE-API-KEY": config.apiKey,
         ...config.additionalHeaders,
       },
-      body: JSON.stringify(body),
+      body: isImport ? (body as string) : JSON.stringify(body),
     });
     const responseText = await response.text();
 
     if (response.ok) {
+      if (isImport) {
+        return responseText
+          .split("\n")
+          .filter((line) => line.trim())
+          .map((line) => JSON.parse(line) as unknown) as TReturn;
+      }
       return JSON.parse(responseText) as TReturn;
     }
 
@@ -61,7 +69,7 @@ async function makeRequest<TBody, TReturn>({
     return makeRequest({
       method,
       config,
-      body,
+      body: isImport ? body : JSON.stringify(body),
       params,
       currentNodeIndex: node.nextIndex,
       attempt: attemptNum + 1,
