@@ -10,6 +10,7 @@ import type {
   FacetableFieldKeys,
 } from "@/collection/base";
 import type { Configuration } from "@/config";
+import type { DocumentOperations } from "@/document";
 import type { OmitDefaultSortingField } from "@/lib/utils";
 import type {
   ExcludeFields,
@@ -39,6 +40,11 @@ export interface CollectionOperations<
    * The collection schema
    */
   readonly schema: Schema;
+
+  /**
+   * The document operations for the collection
+   */
+  readonly documents: DocumentOperations<Schema>;
 
   /**
    * Create the collection in Typesense

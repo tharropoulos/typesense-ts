@@ -12,8 +12,15 @@ import type {
   FacetableFieldKeys,
   GetSchemaFromName,
   GlobalCollections,
+  InferNativeType,
 } from "@/collection/base";
 import type { Configuration } from "@/config";
+import type {
+  DocumentImportParameters,
+  DocumentImportResponseSuccess,
+  ImportResponseFail,
+  UpdateParameters,
+} from "@/document";
 import type { OmitDefaultSortingField } from "@/lib/utils";
 import type {
   ExcludeFields,
@@ -28,6 +35,16 @@ import type {
 import { getConfiguration } from "@/config";
 import { makeRequest } from "@/http/fetch/request";
 import { ARRAY_KEYS } from "@/search";
+
+class DocumentImportError extends Error {
+  public readonly failedDocuments: ImportResponseFail[];
+
+  constructor(failedDocuments: ImportResponseFail[]) {
+    super(`Failed to import ${failedDocuments.length} documents`);
+    this.name = "DocumentImportError";
+    this.failedDocuments = failedDocuments;
+  }
+}
 
 async function retrieveAllCollections(config?: Configuration): Promise<
   (OmitDefaultSortingField<Collection> & {
@@ -89,6 +106,142 @@ function collection<
   >;
 
   return {
+    documents: {
+      async update<
+        const FilterBy extends string,
+        const DocId extends string | undefined = undefined,
+      >(
+        document: Partial<
+          InferNativeType<typeof collectionSchema.fields & CollectionField[]>
+        >,
+        params:
+          | {
+              documentId: DocId;
+              parameters?: never;
+            }
+          | {
+              documentId?: never;
+              parameters: UpdateParameters<typeof collectionSchema, FilterBy>;
+            },
+        config?: Configuration,
+      ) {
+        const urlParams = new URLSearchParams(
+          params.parameters as unknown as Record<string, string>,
+        );
+
+        if (params.documentId) {
+          return await makeRequest({
+            endpoint: `/collections/${encodeURIComponent(schema.name)}/documents/${encodeURIComponent(params.documentId)}`,
+            config: getConfiguration(config),
+            method: "PATCH",
+            body: document,
+          });
+        }
+
+        return await makeRequest({
+          endpoint: `/collections/${encodeURIComponent(schema.name)}/documents`,
+          config: getConfiguration(config),
+          method: "PATCH",
+          body: document,
+          params: urlParams,
+        });
+      },
+
+      async create<
+        const Doc extends boolean = false,
+        const Id extends boolean = false,
+      >(
+        document: Omit<
+          InferNativeType<typeof collectionSchema.fields & CollectionField[]>,
+          "id"
+        > & {
+          id?: string;
+        },
+        parameters?: DocumentImportParameters<Doc, Id>,
+        config?: Configuration,
+      ) {
+        return await makeRequest({
+          endpoint: `/collections/${encodeURIComponent(schema.name)}/documents`,
+          config: getConfiguration(config),
+          method: "POST",
+          body: document,
+          params: new URLSearchParams(
+            parameters as unknown as Record<string, string>,
+          ),
+        });
+      },
+
+      async import<
+        const Doc extends boolean = false,
+        const Id extends boolean = false,
+        const Fail extends boolean = true,
+      >(
+        documents: (Omit<
+          InferNativeType<typeof collectionSchema.fields & CollectionField[]>,
+          "id"
+        > & {
+          id?: string;
+        })[],
+        parameters?: DocumentImportParameters<Doc, Id>,
+        options?: {
+          throw_on_failure?: Fail;
+        },
+        config?: Configuration,
+      ): Promise<
+        Fail extends true ?
+          DocumentImportResponseSuccess<typeof collectionSchema, Doc, Id>[]
+        : (
+            | ImportResponseFail
+            | DocumentImportResponseSuccess<typeof collectionSchema, Doc, Id>
+          )[]
+      > {
+        const params = new URLSearchParams(
+          parameters as unknown as Record<string, string>,
+        );
+
+        if (documents.length === 0) {
+          throw new Error("Cannot import empty array");
+        }
+
+        const docsInJsonl = documents
+          .map((document) => JSON.stringify(document))
+          .join("\n");
+
+        const result = await makeRequest({
+          endpoint: `/collections/${encodeURIComponent(schema.name)}/documents/import`,
+          config: getConfiguration(config),
+          method: "POST",
+          params,
+          body: docsInJsonl,
+          isImport: true,
+        });
+
+        if (options?.throw_on_failure) {
+          const failedResults = (result as ImportResponseFail[]).filter(
+            (r) => r.success === false,
+          );
+          if (failedResults.length > 0) {
+            const error = new DocumentImportError(failedResults);
+            throw error;
+          }
+          return result as DocumentImportResponseSuccess<
+            typeof collectionSchema,
+            Doc,
+            Id
+          >[];
+        }
+
+        return result as (
+          | DocumentImportResponseSuccess<typeof collectionSchema, Doc, Id>
+          | ImportResponseFail
+        )[] as Fail extends true ?
+          DocumentImportResponseSuccess<typeof collectionSchema, Doc, Id>[]
+        : (
+            | ImportResponseFail
+            | DocumentImportResponseSuccess<typeof collectionSchema, Doc, Id>
+          )[];
+      },
+    },
     schema: collectionSchema,
 
     async create(options?: CollectionCreateOptions, config?: Configuration) {
