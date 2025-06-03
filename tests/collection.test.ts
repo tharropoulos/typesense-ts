@@ -857,6 +857,436 @@ describe("collection tests", () => {
       );
     });
   });
+  describe("document operations", () => {
+    describe("create", () => {
+      it("can create a single document", async () => {
+        const schema = collection({
+          name: "test",
+          fields: [
+            {
+              type: "string",
+              name: "title",
+            },
+            {
+              type: "string",
+              name: "content",
+            },
+          ],
+        });
+
+        await schema.create();
+
+        const result = await schema.documents.create({
+          title: "Test Title",
+          content: "Test Content",
+        });
+
+        expect(result).toMatchObject({
+          title: "Test Title",
+          content: "Test Content",
+        });
+        await schema.delete();
+      });
+
+      it("can create a document with optional fields", async () => {
+        const schema = collection({
+          name: "test",
+          fields: [
+            {
+              type: "string",
+              name: "title",
+            },
+            {
+              type: "int32",
+              name: "rating",
+              optional: true,
+            },
+          ],
+        });
+
+        await schema.create();
+
+        const result = await schema.documents.create({
+          title: "Test Title",
+          rating: 5,
+        });
+
+        expect(result).toMatchObject({
+          title: "Test Title",
+          rating: 5,
+        });
+        await schema.delete();
+      });
+
+      it("can create a document with custom id", async () => {
+        const schema = collection({
+          name: "test",
+          fields: [
+            {
+              type: "string",
+              name: "title",
+            },
+          ],
+        });
+
+        await schema.create();
+
+        const result = await schema.documents.create(
+          {
+            id: "custom-id",
+            title: "Test Title",
+          },
+          { return_id: true },
+        );
+
+        expect(result.id).toBe("custom-id");
+        await schema.delete();
+      });
+    });
+
+    describe("import", () => {
+      it("can import multiple documents successfully", async () => {
+        const schema = collection({
+          name: "test",
+          fields: [
+            {
+              type: "string",
+              name: "title",
+            },
+            {
+              type: "string",
+              name: "content",
+            },
+          ],
+        });
+
+        await schema.create();
+
+        const result = await schema.documents.import(
+          [
+            { title: "Document 1", content: "Content 1" },
+            { title: "Document 2", content: "Content 2" },
+            { title: "Document 3", content: "Content 3" },
+          ],
+          {
+            return_doc: true,
+          },
+        );
+
+        expect(result).toHaveLength(3);
+        result.forEach((doc) => {
+          expect(doc.success).toBe(true);
+        });
+        expect(result[0]?.document).toMatchObject({
+          title: "Document 1",
+          id: "0",
+          content: "Content 1",
+        });
+        await schema.delete();
+      });
+
+      it("can import documents with parameters", async () => {
+        const schema = collection({
+          name: "test",
+          fields: [
+            {
+              type: "string",
+              name: "title",
+            },
+          ],
+        });
+
+        await schema.create();
+
+        const documents = [
+          { id: "doc1", title: "Document 1" },
+          { id: "doc2", title: "Document 2" },
+        ] as const;
+
+        const result = await schema.documents.import(
+          [
+            { id: "doc1", title: "Document 1" },
+            { id: "doc2", title: "Document 2" },
+          ],
+          {
+            return_doc: true,
+            return_id: true,
+          },
+        );
+
+        expect(result).toHaveLength(2);
+        result.forEach((doc, index) => {
+          expect(doc.success).toBe(true);
+          expect(doc.document.id).toBe(documents[index]!.id);
+        });
+        await schema.delete();
+      });
+
+      it("throws DocumentImportError when documents fail to import", async () => {
+        const schema = collection({
+          name: "test",
+          fields: [
+            {
+              type: "string",
+              name: "title",
+            },
+            {
+              type: "int32",
+              name: "rating",
+            },
+          ],
+        });
+
+        await schema.create();
+
+        const documents = [
+          { title: "Valid Document", rating: 5 },
+          { title: "Invalid Document", rating: "not a number" as unknown },
+          { title: "Another Valid", rating: 3 },
+        ];
+
+        await expect(
+          // @ts-expect-error - Invalid document has a rating of unknown
+          schema.documents.import(documents, undefined, {
+            throw_on_failure: true,
+          }),
+        ).rejects.toThrow();
+
+        try {
+          // @ts-expect-error - Invalid document has a rating of unknown
+          await schema.documents.import(documents, undefined);
+        } catch (error) {
+          expect(error).toBeInstanceOf(Error);
+          if (
+            error instanceof Error &&
+            "name" in error &&
+            "failedDocuments" in error
+          ) {
+            expect(error.name).toBe("DocumentImportError");
+            expect(error.failedDocuments).toBeDefined();
+            expect(Array.isArray(error.failedDocuments)).toBe(true);
+          }
+        }
+        await schema.delete();
+      });
+
+      it("returns mixed results without throwing when throw_on_failure is false", async () => {
+        const schema = collection({
+          name: "test",
+          fields: [
+            {
+              type: "string",
+              name: "title",
+            },
+            {
+              type: "int32",
+              name: "rating",
+            },
+          ],
+        });
+
+        await schema.create();
+
+        const documents = [
+          { title: "Valid Document", rating: 5 },
+          { title: "Invalid Document", rating: "not a number" as unknown },
+        ];
+
+        // @ts-expect-error - Invalid document has a rating of unknown
+        const result = await schema.documents.import(documents, undefined, {
+          throw_on_failure: false,
+        });
+
+        expect(result).toHaveLength(2);
+        expect(result.some((r) => r.success === true)).toBe(true);
+        expect(result.some((r) => r.success === false)).toBe(true);
+        await schema.delete();
+      });
+
+      it("can import empty array", async () => {
+        const schema = collection({
+          name: "test",
+          fields: [
+            {
+              type: "string",
+              name: "title",
+            },
+          ],
+        });
+
+        await schema.create();
+
+        await expect(schema.documents.import([])).rejects.toThrow(
+          "Cannot import empty array",
+        );
+
+        await schema.delete();
+      });
+
+      it("can import documents with nested fields", async () => {
+        const schema = collection({
+          name: "test",
+          fields: [
+            {
+              type: "string",
+              name: "title",
+            },
+            {
+              type: "object",
+              name: "metadata",
+            },
+            {
+              type: "string",
+              name: "metadata.author",
+            },
+            {
+              type: "int32",
+              name: "metadata.year",
+            },
+          ],
+          enable_nested_fields: true,
+        });
+
+        await schema.create();
+
+        const documents = [
+          {
+            title: "Book 1",
+            metadata: {
+              author: "Author 1",
+              year: 2021,
+            },
+          },
+          {
+            title: "Book 2",
+            metadata: {
+              author: "Author 2",
+              year: 2022,
+            },
+          },
+        ];
+
+        const result = await schema.documents.import(documents);
+
+        expect(result).toHaveLength(2);
+        result.forEach((doc) => {
+          expect(doc.success).toBe(true);
+        });
+        await schema.delete();
+      });
+
+      it("handles large batch imports", async () => {
+        const schema = collection({
+          name: "large_batch_import",
+          fields: [
+            {
+              type: "string",
+              name: "title",
+            },
+            {
+              type: "int32",
+              name: "index",
+            },
+          ],
+        });
+
+        await schema.create();
+
+        const documents = Array.from({ length: 100 }, (_, i) => ({
+          title: `Document ${i}`,
+          index: i,
+        }));
+
+        const result = await schema.documents.import(documents);
+
+        expect(result).toHaveLength(100);
+        result.forEach((doc) => {
+          expect(doc.success).toBe(true);
+        });
+        await schema.delete();
+      });
+    });
+    describe.only("update", () => {
+      it("can update a document via documentId", async () => {
+        const schema = collection({
+          name: "test",
+          fields: [
+            {
+              type: "string",
+              name: "title",
+            },
+          ],
+        });
+
+        await schema.create();
+
+        const createdDoc = await schema.documents.create({
+          title: "Test Title",
+        });
+
+        const result = await schema.documents.update(
+          {
+            title: "Updated Title",
+          },
+          {
+            documentId: createdDoc.id,
+          },
+        );
+
+        expect(result.title).toBe("Updated Title");
+        expect(result.id).toBe(createdDoc.id);
+
+        await schema.delete();
+      });
+
+      it("can update a document via filter_by", async () => {
+        const schema = collection({
+          name: "test",
+          fields: [
+            {
+              type: "string",
+              name: "title",
+            },
+            {
+              type: "int32",
+              name: "num",
+            },
+          ],
+        });
+
+        await schema.create();
+
+        await schema.documents.import([
+          {
+            title: "Test Title",
+            num: 1,
+          },
+          {
+            title: "Test Title 2",
+            num: 2,
+          },
+          {
+            title: "Test Title 3",
+            num: 3,
+          },
+        ]);
+
+        const result = await schema.documents.update(
+          {
+            title: "Updated Title",
+          },
+          {
+            parameters: {
+              filter_by: `num:<3`,
+            },
+          },
+        );
+
+        expect(result.num_updated).toBe(2);
+        await schema.delete();
+      });
+    });
+  });
   describe("InferNativeType tests", () => {
     it("can infer the native type of a string", () => {
       const _schema = collection({
