@@ -1,7 +1,7 @@
 import type { DocumentSchema, InferNativeType } from "@/collection/base";
 
 import { validateCollectionUpdate } from "@/collection/update";
-import { configure } from "@/config";
+import { setDefaultConfiguration } from "@/config";
 import { collection, retrieveAllCollections } from "@/http/fetch";
 import { upAll } from "docker-compose";
 import {
@@ -17,6 +17,11 @@ import {
 const isCi = process.env.CI;
 
 beforeAll(async () => {
+  setDefaultConfiguration({
+    apiKey: "xyz",
+    nodes: [{ host: "localhost", port: 8108, protocol: "http" }],
+  });
+
   if (!isCi) {
     await upAll({ cwd: __dirname, log: true });
   }
@@ -32,23 +37,15 @@ afterEach(async () => {
   });
 });
 
-const config = configure({
-  apiKey: "xyz",
-  nodes: [{ host: "localhost", port: 8108, protocol: "http" }],
+const testSchema = collection({
+  fields: [
+    {
+      name: "field",
+      type: "string",
+    },
+  ],
+  name: "retrieve-test",
 });
-
-const testSchema = collection(
-  {
-    fields: [
-      {
-        name: "field",
-        type: "string",
-      },
-    ],
-    name: "retrieve-test",
-  },
-  config,
-);
 
 declare module "@/collection/base" {
   interface GlobalCollections {
@@ -58,79 +55,67 @@ declare module "@/collection/base" {
 describe("collection tests", () => {
   describe("createCollection", () => {
     it("can't have an optional default sorting field", async () => {
-      const schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "string",
-              optional: true,
-              sort: true,
-              name: "field",
-            },
-          ],
-          // @ts-expect-error This is erroring as expected
-          default_sorting_field: "field",
-        },
-        config,
-      );
+      const schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "string",
+            optional: true,
+            sort: true,
+            name: "field",
+          },
+        ],
+        // @ts-expect-error This is erroring as expected
+        default_sorting_field: "field",
+      });
       await expect(schema.create()).rejects.toThrow(
         "Default sorting field `field` cannot be an optional field",
       );
     });
     it("can't have a string that's not sorted as a default sorting field", async () => {
-      const schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "string",
-              name: "field",
-            },
-          ],
-          // @ts-expect-error This is erroring as expected
-          default_sorting_field: "field",
-        },
-        config,
-      );
+      const schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "string",
+            name: "field",
+          },
+        ],
+        // @ts-expect-error This is erroring as expected
+        default_sorting_field: "field",
+      });
       await expect(schema.create()).rejects.toThrow(
         "Default sorting field `field` is not a sortable type",
       );
     });
     it("can't have a num field as a default sorting field", async () => {
-      const schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "int32",
-              sort: false,
-              name: "field",
-            },
-          ],
-          // @ts-expect-error This is erroring as expected
-          default_sorting_field: "field",
-        },
-        config,
-      );
+      const schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "int32",
+            sort: false,
+            name: "field",
+          },
+        ],
+        // @ts-expect-error This is erroring as expected
+        default_sorting_field: "field",
+      });
       await expect(schema.create()).rejects.toThrow(
         "Default sorting field `field` is not a sortable type",
       );
     });
     it("can have a num field as a default sorting field", async () => {
-      const schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "int32",
-              name: "field",
-            },
-          ],
-          default_sorting_field: "field",
-        },
-        config,
-      );
+      const schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "int32",
+            name: "field",
+          },
+        ],
+        default_sorting_field: "field",
+      });
       const result = await schema.create();
 
       const { created_at, ...expectedResult } = result;
@@ -160,20 +145,17 @@ describe("collection tests", () => {
       });
     });
     it("can have a string field that's sorted as a default sorting field", async () => {
-      const schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "string",
-              sort: true,
-              name: "field",
-            },
-          ],
-          default_sorting_field: "field",
-        },
-        config,
-      );
+      const schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "string",
+            sort: true,
+            name: "field",
+          },
+        ],
+        default_sorting_field: "field",
+      });
       const result = await schema.create();
 
       const { created_at, ...expectedResult } = result;
@@ -214,61 +196,51 @@ describe("collection tests", () => {
             },
           ],
         },
-        config,
       );
       await expect(schema.create()).rejects.toThrow(
         "Type `object` or `object[]` can be used only when nested fields are enabled by setting` enable_nested_fields` to true.",
       );
     });
     it("can't have num_dim, vec_dist or hnsw_params on a non-floating point field", () => {
-      collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "string",
-              name: "field",
-              // @ts-expect-error This is erroring as expected
-              vec_dist: "cosine",
-            },
-          ],
-        },
-        config,
-      );
+      collection({
+        name: "test",
+        fields: [
+          {
+            type: "string",
+            name: "field",
+            // @ts-expect-error This is erroring as expected
+            vec_dist: "cosine",
+          },
+        ],
+      });
     });
     it("can have a nested object field with nested fields enabled", () => {
-      collection(
-        {
-          name: "test",
-          fields: [
-            // @ts-expect-error This is erroring as expected
-            {
-              type: "string",
-              name: "field",
-              hnsw_params: {
-                M: 16,
-                ef_construction: 200,
-              },
+      collection({
+        name: "test",
+        fields: [
+          // @ts-expect-error This is erroring as expected
+          {
+            type: "string",
+            name: "field",
+            hnsw_params: {
+              M: 16,
+              ef_construction: 200,
             },
-          ],
-        },
-        config,
-      );
+          },
+        ],
+      });
     });
     it("can have a nested object field with nested fields enabled", async () => {
-      const schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "object",
-              name: "field",
-            },
-          ],
-          enable_nested_fields: true,
-        },
-        config,
-      );
+      const schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "object",
+            name: "field",
+          },
+        ],
+        enable_nested_fields: true,
+      });
       const result = await schema.create();
 
       const { created_at, ...expectedResult } = result;
@@ -298,35 +270,29 @@ describe("collection tests", () => {
       });
     });
     it("can't have a non-indexed-field facetted by", async () => {
-      const schema = collection(
-        {
-          name: "test",
-          fields: [
-            // @ts-expect-error This is erroring as expected
-            { type: "string", name: "field", index: false, facet: true },
-          ],
-        },
-        config,
-      );
+      const schema = collection({
+        name: "test",
+        fields: [
+          // @ts-expect-error This is erroring as expected
+          { type: "string", name: "field", index: false, facet: true },
+        ],
+      });
       await expect(schema.create()).rejects.toThrow(
         "Field `field` cannot be a facet since it's marked as non-indexable.",
       );
     });
     it("can have a non-index field sorted by", async () => {
-      const schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "string",
-              name: "field",
-              index: false,
-              sort: true,
-            },
-          ],
-        },
-        config,
-      );
+      const schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "string",
+            name: "field",
+            index: false,
+            sort: true,
+          },
+        ],
+      });
       const result = await schema.create();
 
       const { created_at, ...expectedResult } = result;
@@ -356,25 +322,22 @@ describe("collection tests", () => {
       });
     });
     it("can have a facet set to true if the index is undefined or true", async () => {
-      const schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "string",
-              name: "field",
-              index: true,
-              facet: true,
-            },
-            {
-              type: "string",
-              name: "field2",
-              facet: true,
-            },
-          ],
-        },
-        config,
-      );
+      const schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "string",
+            name: "field",
+            index: true,
+            facet: true,
+          },
+          {
+            type: "string",
+            name: "field2",
+            facet: true,
+          },
+        ],
+      });
       const result = await schema.create();
 
       const { created_at, ...expectedResult } = result;
@@ -416,25 +379,22 @@ describe("collection tests", () => {
       });
     });
     it("can have a sort set to true if the index is undefined or true", async () => {
-      const schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "string",
-              name: "field",
-              index: true,
-              sort: true,
-            },
-            {
-              type: "string",
-              name: "field2",
-              sort: true,
-            },
-          ],
-        },
-        config,
-      );
+      const schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "string",
+            name: "field",
+            index: true,
+            sort: true,
+          },
+          {
+            type: "string",
+            name: "field2",
+            sort: true,
+          },
+        ],
+      });
       const result = await schema.create();
 
       const { created_at, ...expectedResult } = result;
@@ -476,29 +436,26 @@ describe("collection tests", () => {
       });
     });
     it("can have an embedding field", { timeout: 30000 }, async () => {
-      const schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "string",
-              name: "field",
-            },
-            { type: "string", name: "field2" },
-            {
-              name: "field3",
-              type: "float[]",
-              embed: {
-                from: ["field"],
-                model_config: {
-                  model_name: "ts/e5-small",
-                },
+      const schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "string",
+            name: "field",
+          },
+          { type: "string", name: "field2" },
+          {
+            name: "field3",
+            type: "float[]",
+            embed: {
+              from: ["field"],
+              model_config: {
+                model_name: "ts/e5-small",
               },
             },
-          ],
-        },
-        config,
-      );
+          },
+        ],
+      });
       const result = await schema.create();
 
       const { created_at, ...expectedResult } = result;
@@ -564,29 +521,26 @@ describe("collection tests", () => {
       });
     });
     it("can't have an embedding field with a type other than float[]", () => {
-      collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "string",
-              name: "field",
-            },
-            // @ts-expect-error This is erroring as expected
-            {
-              name: "field2",
-              type: "string[]",
-              embed: {
-                from: ["field"],
-                model_config: {
-                  model_name: "ts/e5-small",
-                },
+      collection({
+        name: "test",
+        fields: [
+          {
+            type: "string",
+            name: "field",
+          },
+          // @ts-expect-error This is erroring as expected
+          {
+            name: "field2",
+            type: "string[]",
+            embed: {
+              from: ["field"],
+              model_config: {
+                model_name: "ts/e5-small",
               },
             },
-          ],
-        },
-        config,
-      );
+          },
+        ],
+      });
       // The request will go on through Typesense, but it will not add the parameters to the schema
     });
   });
@@ -613,17 +567,14 @@ describe("collection tests", () => {
     });
 
     it("throws an error if the collection doesn't exist", async () => {
-      const schema = collection(
-        {
-          name: "non-existent",
-          fields: [{ type: "string", name: "field" }],
-        },
-        config,
-      );
+      const schema = collection({
+        name: "non-existent",
+        fields: [{ type: "string", name: "field" }],
+      });
       await expect(schema.retrieve()).rejects.toThrow("Not Found");
     });
     it("can retrieve all collections", async () => {
-      const result = await retrieveAllCollections(config);
+      const result = await retrieveAllCollections();
 
       expect(result.length).toBeGreaterThanOrEqual(1);
       const retrievedCollection = result.find(
@@ -725,18 +676,15 @@ describe("collection tests", () => {
   });
   describe("updateCollection", () => {
     it("can't change a field signature without dropping it first", async () => {
-      const schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "string",
-              name: "field",
-            },
-          ],
-        },
-        config,
-      );
+      const schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "string",
+            name: "field",
+          },
+        ],
+      });
       await expect(schema.create()).resolves.toBeTruthy();
 
       const updatedSchema = validateCollectionUpdate(
@@ -757,18 +705,15 @@ describe("collection tests", () => {
       );
     });
     it("can't drop a field that doesn't exist", async () => {
-      const schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "string",
-              name: "field",
-            },
-          ],
-        },
-        config,
-      );
+      const schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "string",
+            name: "field",
+          },
+        ],
+      });
       await expect(schema.create()).resolves.toBeTruthy();
 
       const updatedSchema = validateCollectionUpdate(
@@ -789,19 +734,16 @@ describe("collection tests", () => {
       );
     });
     it("can drop a field", async () => {
-      const schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "string",
-              name: "field",
-            },
-          ],
-          enable_nested_fields: true,
-        },
-        config,
-      );
+      const schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "string",
+            name: "field",
+          },
+        ],
+        enable_nested_fields: true,
+      });
       await expect(schema.create()).resolves.toBeTruthy();
 
       const updatedSchema = validateCollectionUpdate(schema.schema, {
@@ -819,19 +761,16 @@ describe("collection tests", () => {
       });
     });
     it("can reinstantiate a field", async () => {
-      const schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "string",
-              name: "field",
-            },
-          ],
-          default_sorting_field: undefined,
-        },
-        config,
-      );
+      const schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "string",
+            name: "field",
+          },
+        ],
+        default_sorting_field: undefined,
+      });
       await expect(schema.create()).resolves.toBeTruthy();
 
       const updatedSchema = validateCollectionUpdate(schema.schema, {
@@ -862,18 +801,15 @@ describe("collection tests", () => {
       });
     });
     it("can add a new field", async () => {
-      const schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "string",
-              name: "field",
-            },
-          ],
-        },
-        config,
-      );
+      const schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "string",
+            name: "field",
+          },
+        ],
+      });
       await expect(schema.create()).resolves.toBeTruthy();
 
       const updatedSchema = validateCollectionUpdate(schema.schema, {
@@ -896,18 +832,15 @@ describe("collection tests", () => {
       });
     });
     it("can't add an object field if nested fields are not enabled", async () => {
-      const schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "string",
-              name: "field",
-            },
-          ],
-        },
-        config,
-      );
+      const schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "string",
+            name: "field",
+          },
+        ],
+      });
       await expect(schema.create()).resolves.toBeTruthy();
 
       //TODO: This should be an error, but it's not being caught
@@ -926,18 +859,15 @@ describe("collection tests", () => {
   });
   describe("InferNativeType tests", () => {
     it("can infer the native type of a string", () => {
-      const _schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "string",
-              name: "field",
-            },
-          ],
-        },
-        config,
-      );
+      const _schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "string",
+            name: "field",
+          },
+        ],
+      });
 
       expectTypeOf<
         InferNativeType<typeof _schema.schema.fields>
@@ -947,18 +877,15 @@ describe("collection tests", () => {
       }>();
     });
     it("can infer the native type of a string array", () => {
-      const _schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "string[]",
-              name: "field",
-            },
-          ],
-        },
-        config,
-      );
+      const _schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "string[]",
+            name: "field",
+          },
+        ],
+      });
 
       expectTypeOf<
         InferNativeType<typeof _schema.schema.fields>
@@ -968,18 +895,15 @@ describe("collection tests", () => {
       }>();
     });
     it("can infer the native type of an int32", () => {
-      const _schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "int32",
-              name: "field",
-            },
-          ],
-        },
-        config,
-      );
+      const _schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "int32",
+            name: "field",
+          },
+        ],
+      });
 
       expectTypeOf<
         InferNativeType<typeof _schema.schema.fields>
@@ -989,18 +913,15 @@ describe("collection tests", () => {
       }>();
     });
     it("can infer the native type of a int32 array", () => {
-      const _schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "int32[]",
-              name: "field",
-            },
-          ],
-        },
-        config,
-      );
+      const _schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "int32[]",
+            name: "field",
+          },
+        ],
+      });
 
       expectTypeOf<
         InferNativeType<typeof _schema.schema.fields>
@@ -1010,18 +931,15 @@ describe("collection tests", () => {
       }>();
     });
     it("can infer the native type of an int64", () => {
-      const _schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "int64",
-              name: "field",
-            },
-          ],
-        },
-        config,
-      );
+      const _schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "int64",
+            name: "field",
+          },
+        ],
+      });
 
       expectTypeOf<
         InferNativeType<typeof _schema.schema.fields>
@@ -1031,18 +949,15 @@ describe("collection tests", () => {
       }>();
     });
     it("can infer the native type of a int64 array", () => {
-      const _schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "int64[]",
-              name: "field",
-            },
-          ],
-        },
-        config,
-      );
+      const _schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "int64[]",
+            name: "field",
+          },
+        ],
+      });
 
       expectTypeOf<
         InferNativeType<typeof _schema.schema.fields>
@@ -1052,18 +967,15 @@ describe("collection tests", () => {
       }>();
     });
     it("can infer the native type of a float", () => {
-      const _schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "float",
-              name: "field",
-            },
-          ],
-        },
-        config,
-      );
+      const _schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "float",
+            name: "field",
+          },
+        ],
+      });
 
       expectTypeOf<
         InferNativeType<typeof _schema.schema.fields>
@@ -1073,18 +985,15 @@ describe("collection tests", () => {
       }>();
     });
     it("can infer the native type of a float array", () => {
-      const _schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "float[]",
-              name: "field",
-            },
-          ],
-        },
-        config,
-      );
+      const _schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "float[]",
+            name: "field",
+          },
+        ],
+      });
 
       expectTypeOf<
         InferNativeType<typeof _schema.schema.fields>
@@ -1094,18 +1003,15 @@ describe("collection tests", () => {
       }>();
     });
     it("can infer the native type of a boolean", () => {
-      const _schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "bool",
-              name: "field",
-            },
-          ],
-        },
-        config,
-      );
+      const _schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "bool",
+            name: "field",
+          },
+        ],
+      });
 
       expectTypeOf<
         InferNativeType<typeof _schema.schema.fields>
@@ -1115,18 +1021,15 @@ describe("collection tests", () => {
       }>();
     });
     it("can infer the native type of a boolean array", () => {
-      const _schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "bool[]",
-              name: "field",
-            },
-          ],
-        },
-        config,
-      );
+      const _schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "bool[]",
+            name: "field",
+          },
+        ],
+      });
 
       expectTypeOf<
         InferNativeType<typeof _schema.schema.fields>
@@ -1136,18 +1039,15 @@ describe("collection tests", () => {
       }>();
     });
     it("can infer the native type of an geopoint", () => {
-      const _schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "geopoint",
-              name: "field",
-            },
-          ],
-        },
-        config,
-      );
+      const _schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "geopoint",
+            name: "field",
+          },
+        ],
+      });
 
       expectTypeOf<
         InferNativeType<typeof _schema.schema.fields>
@@ -1157,18 +1057,15 @@ describe("collection tests", () => {
       }>();
     });
     it("can infer the native type of an geopoint array", () => {
-      const _schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "geopoint[]",
-              name: "field",
-            },
-          ],
-        },
-        config,
-      );
+      const _schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "geopoint[]",
+            name: "field",
+          },
+        ],
+      });
 
       expectTypeOf<
         InferNativeType<typeof _schema.schema.fields>
@@ -1178,18 +1075,15 @@ describe("collection tests", () => {
       }>();
     });
     it("can infer the native type of an auto", () => {
-      const _schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "auto",
-              name: "field",
-            },
-          ],
-        },
-        config,
-      );
+      const _schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "auto",
+            name: "field",
+          },
+        ],
+      });
 
       expectTypeOf<
         InferNativeType<typeof _schema.schema.fields>
@@ -1199,18 +1093,15 @@ describe("collection tests", () => {
       }>();
     });
     it("can infer the native type of a wildcard string", () => {
-      const _schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "string*",
-              name: "field",
-            },
-          ],
-        },
-        config,
-      );
+      const _schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "string*",
+            name: "field",
+          },
+        ],
+      });
 
       expectTypeOf<
         InferNativeType<typeof _schema.schema.fields>
@@ -1220,18 +1111,15 @@ describe("collection tests", () => {
       }>();
     });
     it("can infer the native type of a base64 encoded image", () => {
-      const _schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "image",
-              name: "field",
-            },
-          ],
-        },
-        config,
-      );
+      const _schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "image",
+            name: "field",
+          },
+        ],
+      });
 
       expectTypeOf<
         InferNativeType<typeof _schema.schema.fields>
@@ -1241,19 +1129,16 @@ describe("collection tests", () => {
       }>();
     });
     it("can infer optional fields", () => {
-      const _schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "string",
-              optional: true,
-              name: "field",
-            },
-          ],
-        },
-        config,
-      );
+      const _schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "string",
+            optional: true,
+            name: "field",
+          },
+        ],
+      });
 
       expectTypeOf<
         InferNativeType<typeof _schema.schema.fields>
@@ -1263,19 +1148,16 @@ describe("collection tests", () => {
       }>();
     });
     it("can infer the native type of an object with no children keys", () => {
-      const _schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "object",
-              name: "field",
-            },
-          ],
-          enable_nested_fields: true,
-        },
-        config,
-      );
+      const _schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "object",
+            name: "field",
+          },
+        ],
+        enable_nested_fields: true,
+      });
 
       expectTypeOf<
         InferNativeType<typeof _schema.schema.fields>
@@ -1285,31 +1167,28 @@ describe("collection tests", () => {
       }>();
     });
     it("can infer the native type of an object with children keys", () => {
-      const _schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "object",
-              name: "field",
-            },
-            {
-              type: "string",
-              name: "field.child",
-            },
-            {
-              type: "object",
-              name: "field.child2",
-            },
-            {
-              type: "string",
-              name: "field.child2.child",
-            },
-          ],
-          enable_nested_fields: true,
-        },
-        config,
-      );
+      const _schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "object",
+            name: "field",
+          },
+          {
+            type: "string",
+            name: "field.child",
+          },
+          {
+            type: "object",
+            name: "field.child2",
+          },
+          {
+            type: "string",
+            name: "field.child2.child",
+          },
+        ],
+        enable_nested_fields: true,
+      });
 
       expectTypeOf<
         InferNativeType<typeof _schema.schema.fields>
@@ -1323,28 +1202,25 @@ describe("collection tests", () => {
       }>();
     });
     it("can infer the native type of flattened object fields", () => {
-      const _schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "object",
-              name: "field",
-              flattened: true,
-            },
-            {
-              type: "string",
-              name: "field.child",
-            },
-            {
-              type: "string",
-              name: "flattened.name",
-            },
-          ],
-          enable_nested_fields: true,
-        },
-        config,
-      );
+      const _schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "object",
+            name: "field",
+            flattened: true,
+          },
+          {
+            type: "string",
+            name: "field.child",
+          },
+          {
+            type: "string",
+            name: "flattened.name",
+          },
+        ],
+        enable_nested_fields: true,
+      });
 
       expectTypeOf<
         InferNativeType<typeof _schema.schema.fields>
@@ -1356,32 +1232,29 @@ describe("collection tests", () => {
       }>();
     });
     it("can infer the native type of an object with children keys and optional fields", () => {
-      const _schema = collection(
-        {
-          name: "test",
-          fields: [
-            {
-              type: "object",
-              name: "field",
-            },
-            {
-              type: "string",
-              name: "field.child",
-            },
-            {
-              type: "object",
-              name: "field.child2",
-            },
-            {
-              type: "string",
-              name: "field.child2.child",
-              optional: true,
-            },
-          ],
-          enable_nested_fields: true,
-        },
-        config,
-      );
+      const _schema = collection({
+        name: "test",
+        fields: [
+          {
+            type: "object",
+            name: "field",
+          },
+          {
+            type: "string",
+            name: "field.child",
+          },
+          {
+            type: "object",
+            name: "field.child2",
+          },
+          {
+            type: "string",
+            name: "field.child2.child",
+            optional: true,
+          },
+        ],
+        enable_nested_fields: true,
+      });
 
       expectTypeOf<
         InferNativeType<typeof _schema.schema.fields>

@@ -9,6 +9,7 @@ import type {
   ExtractFields,
   FacetableFieldKeys,
 } from "@/collection/base";
+import type { Configuration } from "@/config";
 import type { OmitDefaultSortingField } from "@/lib/utils";
 import type {
   ExcludeFields,
@@ -42,7 +43,10 @@ export interface CollectionOperations<
   /**
    * Create the collection in Typesense
    */
-  create(options?: CollectionCreateOptions): Promise<
+  create(
+    options?: CollectionCreateOptions,
+    config?: Configuration,
+  ): Promise<
     Schema extends OmitDefaultSortingField<Schema> ?
       Schema & {
         created_at: number;
@@ -61,12 +65,13 @@ export interface CollectionOperations<
    */
   update<const T extends { fields: CollectionField[]; name: string }>(
     collection: T,
+    config?: Configuration,
   ): Promise<{ fields: CollectionField<string, string>[] }>;
 
   /**
    * Retrieve the collection information
    */
-  retrieve(): Promise<
+  retrieve(config?: Configuration): Promise<
     OmitDefaultSortingField<Collection> & {
       created_at: number;
       num_documents: number;
@@ -77,7 +82,10 @@ export interface CollectionOperations<
   /**
    * Delete the collection
    */
-  delete(options?: CollectionDeleteOptions): Promise<
+  delete(
+    options?: CollectionDeleteOptions,
+    config?: Configuration,
+  ): Promise<
     Collection & {
       created_at: number;
       num_documents: number;
@@ -132,6 +140,7 @@ export interface CollectionOperations<
       Fields,
       EnableV1Highlights
     >,
+    config?: Configuration,
   ): Promise<
     SearchResponse<
       Fields,

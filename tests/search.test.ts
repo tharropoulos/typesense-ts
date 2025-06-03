@@ -7,7 +7,7 @@ import type {
 } from "@/search";
 
 import { collection as _collection } from "@/collection/base";
-import { configure } from "@/config";
+import { setDefaultConfiguration } from "@/config";
 import { collection } from "@/http/fetch";
 import { upAll } from "docker-compose";
 import {
@@ -21,27 +21,19 @@ import {
 
 const isCi = process.env.CI;
 
-const config = configure({
-  apiKey: "xyz",
-  nodes: [{ host: "localhost", port: 8108, protocol: "http" }],
+const _search_schema = collection({
+  fields: [
+    { name: "foo", type: "string" },
+    { name: "bar", type: "int32" },
+    { name: "baz", type: "object" },
+    { name: "baz.qux", type: "string", facet: true },
+    { name: "quux", type: "string", infix: true },
+    { name: "quuz", type: "string", index: false },
+    { name: "ref", type: "string", reference: "test.name", optional: true },
+  ],
+  name: "search_test",
+  enable_nested_fields: true,
 });
-
-const _search_schema = collection(
-  {
-    fields: [
-      { name: "foo", type: "string" },
-      { name: "bar", type: "int32" },
-      { name: "baz", type: "object" },
-      { name: "baz.qux", type: "string", facet: true },
-      { name: "quux", type: "string", infix: true },
-      { name: "quuz", type: "string", index: false },
-      { name: "ref", type: "string", reference: "test.name", optional: true },
-    ],
-    name: "search_test",
-    enable_nested_fields: true,
-  },
-  config,
-);
 
 declare module "@/collection/base" {
   interface GlobalCollections {
@@ -53,7 +45,14 @@ beforeAll(async () => {
   if (!isCi) {
     await upAll({ cwd: __dirname, log: true });
   }
+
+  setDefaultConfiguration({
+    apiKey: "xyz",
+    nodes: [{ host: "localhost", port: 8108, protocol: "http" }],
+  });
+
   await _search_schema.create();
+
   const doc = await fetch(
     "http://localhost:8108/collections/search_test/documents",
     {
@@ -88,31 +87,25 @@ describe("search tests", () => {
   describe("type tests", () => {
     describe("MapInfixValues", () => {
       it("should return just 'off' if none of the values passed are infixable", () => {
-        const _schema = collection(
-          {
-            fields: [
-              { type: "string", name: "name" },
-              { type: "string", name: "username" },
-            ],
-            name: "users",
-          },
-          config,
-        );
+        const _schema = collection({
+          fields: [
+            { type: "string", name: "name" },
+            { type: "string", name: "username" },
+          ],
+          name: "users",
+        });
         expectTypeOf<
           MapInfixValues<typeof _schema.schema.fields, ["name", "username"]>
         >().toEqualTypeOf<["off", "off"]>();
       });
       it("should return mixed values if some of the values passed are infixable", () => {
-        const _schema = collection(
-          {
-            fields: [
-              { type: "string", name: "name", infix: true },
-              { type: "string", name: "username" },
-            ],
-            name: "users",
-          },
-          config,
-        );
+        const _schema = collection({
+          fields: [
+            { type: "string", name: "name", infix: true },
+            { type: "string", name: "username" },
+          ],
+          name: "users",
+        });
         expectTypeOf<
           MapInfixValues<typeof _schema.schema.fields, ["name", "username"]>
         >().toEqualTypeOf<["off" | "always" | "fallback", "off"]>();
@@ -120,32 +113,26 @@ describe("search tests", () => {
     });
     describe("QueryBy", () => {
       it("should return a never tuple if none of the fields are of type `string`", () => {
-        const _schema = collection(
-          {
-            fields: [
-              { type: "int32", name: "foo" },
-              { type: "bool", name: "bar" },
-            ],
-            name: "users",
-          },
-          config,
-        );
+        const _schema = collection({
+          fields: [
+            { type: "int32", name: "foo" },
+            { type: "bool", name: "bar" },
+          ],
+          name: "users",
+        });
         expectTypeOf<QueryBy<typeof _schema.schema.fields>>().toEqualTypeOf<
           never[]
         >();
       });
       it("should return a tuple of strings if some of the fields are of type `string`", () => {
-        const _schema = collection(
-          {
-            fields: [
-              { type: "int32", name: "foo" },
-              { type: "string", name: "bar" },
-              { type: "string", name: "baz" },
-            ],
-            name: "users",
-          },
-          config,
-        );
+        const _schema = collection({
+          fields: [
+            { type: "int32", name: "foo" },
+            { type: "string", name: "bar" },
+            { type: "string", name: "baz" },
+          ],
+          name: "users",
+        });
         expectTypeOf<QueryBy<typeof _schema.schema.fields>>().toEqualTypeOf<
           ("bar" | "baz")[]
         >();
@@ -153,53 +140,44 @@ describe("search tests", () => {
     });
     describe("GenerateNestedStructure", () => {
       it("should handle non-nested fields", () => {
-        const _schema = collection(
-          {
-            fields: [
-              { type: "string", name: "foo" },
-              { type: "string", name: "bar" },
-            ],
-            name: "users",
-          },
-          config,
-        );
+        const _schema = collection({
+          fields: [
+            { type: "string", name: "foo" },
+            { type: "string", name: "bar" },
+          ],
+          name: "users",
+        });
 
         expectTypeOf<
           GenerateNestedStructure<typeof _schema.schema.fields, "foo">
         >().toEqualTypeOf<{ foo: string }>();
       });
       it("should handle nested fields", () => {
-        const _schema = collection(
-          {
-            fields: [
-              { type: "string", name: "foo" },
-              { type: "object", name: "bar" },
-              { type: "string", name: "bar.baz" },
-            ],
-            enable_nested_fields: true,
-            name: "users",
-          },
-          config,
-        );
+        const _schema = collection({
+          fields: [
+            { type: "string", name: "foo" },
+            { type: "object", name: "bar" },
+            { type: "string", name: "bar.baz" },
+          ],
+          enable_nested_fields: true,
+          name: "users",
+        });
 
         expectTypeOf<
           GenerateNestedStructure<typeof _schema.schema.fields, "bar.baz">
         >().toEqualTypeOf<{ bar: { baz: string } }>();
       });
       it("should handle overlapping paths", () => {
-        const _schema = collection(
-          {
-            fields: [
-              { type: "object", name: "foo" },
-              { type: "string", name: "foo.bar" },
-              { type: "object", name: "foo.bar.baz" },
-              { type: "string", name: "foo.bar.baz.qux" },
-            ],
-            enable_nested_fields: true,
-            name: "users",
-          },
-          config,
-        );
+        const _schema = collection({
+          fields: [
+            { type: "object", name: "foo" },
+            { type: "string", name: "foo.bar" },
+            { type: "object", name: "foo.bar.baz" },
+            { type: "string", name: "foo.bar.baz.qux" },
+          ],
+          enable_nested_fields: true,
+          name: "users",
+        });
 
         expectTypeOf<
           GenerateNestedStructure<
@@ -211,16 +189,13 @@ describe("search tests", () => {
     });
     describe("GetHighlightsFromParams", () => {
       it("should return an empty tuple if query is wildcard", () => {
-        const _schema = collection(
-          {
-            fields: [
-              { type: "string", name: "foo" },
-              { type: "string", name: "bar" },
-            ],
-            name: "users",
-          },
-          config,
-        );
+        const _schema = collection({
+          fields: [
+            { type: "string", name: "foo" },
+            { type: "string", name: "bar" },
+          ],
+          name: "users",
+        });
 
         expectTypeOf<
           GetHighlightsFromParams<
@@ -234,16 +209,13 @@ describe("search tests", () => {
         >().toEqualTypeOf<[]>();
       });
       it("should return an empty tuple if highlight_fields is 'none'", () => {
-        const _schema = collection(
-          {
-            fields: [
-              { type: "string", name: "foo" },
-              { type: "string", name: "bar" },
-            ],
-            name: "users",
-          },
-          config,
-        );
+        const _schema = collection({
+          fields: [
+            { type: "string", name: "foo" },
+            { type: "string", name: "bar" },
+          ],
+          name: "users",
+        });
 
         expectTypeOf<
           GetHighlightsFromParams<
@@ -257,16 +229,13 @@ describe("search tests", () => {
         >().toEqualTypeOf<[]>();
       });
       it("highlight_fields should take precedence over the rest of the tuples", () => {
-        const _schema = collection(
-          {
-            fields: [
-              { type: "string", name: "foo" },
-              { type: "string", name: "bar" },
-            ],
-            name: "users",
-          },
-          config,
-        );
+        const _schema = collection({
+          fields: [
+            { type: "string", name: "foo" },
+            { type: "string", name: "bar" },
+          ],
+          name: "users",
+        });
 
         expectTypeOf<
           GetHighlightsFromParams<
@@ -280,16 +249,13 @@ describe("search tests", () => {
         >().toEqualTypeOf<["foo"]>();
       });
       it("should return the intersection of the query_by and include_fields if highlight_fields and exclude fields are undefined", () => {
-        const _schema = collection(
-          {
-            fields: [
-              { type: "string", name: "foo" },
-              { type: "string", name: "bar" },
-            ],
-            name: "users",
-          },
-          config,
-        );
+        const _schema = collection({
+          fields: [
+            { type: "string", name: "foo" },
+            { type: "string", name: "bar" },
+          ],
+          name: "users",
+        });
 
         expectTypeOf<
           GetHighlightsFromParams<
@@ -303,16 +269,13 @@ describe("search tests", () => {
         >().toEqualTypeOf<["bar"]>();
       });
       it("should return the intersection of the query_by and exclude_fields if highlight_fields and include_fields are undefined", () => {
-        const _schema = collection(
-          {
-            fields: [
-              { type: "string", name: "foo" },
-              { type: "string", name: "bar" },
-            ],
-            name: "users",
-          },
-          config,
-        );
+        const _schema = collection({
+          fields: [
+            { type: "string", name: "foo" },
+            { type: "string", name: "bar" },
+          ],
+          name: "users",
+        });
 
         expectTypeOf<
           GetHighlightsFromParams<
@@ -326,16 +289,13 @@ describe("search tests", () => {
         >().toEqualTypeOf<["foo"]>();
       });
       it("should return the intersection of the query_by and include_fields and exclude_fields if highlight_fields is undefined", () => {
-        const _schema = collection(
-          {
-            fields: [
-              { type: "string", name: "foo" },
-              { type: "string", name: "bar" },
-            ],
-            name: "users",
-          },
-          config,
-        );
+        const _schema = collection({
+          fields: [
+            { type: "string", name: "foo" },
+            { type: "string", name: "bar" },
+          ],
+          name: "users",
+        });
 
         expectTypeOf<
           GetHighlightsFromParams<
@@ -349,16 +309,13 @@ describe("search tests", () => {
         >().toEqualTypeOf<["bar"]>();
       });
       it("should return query_by if highlight_fields, include_fields and exclude_fields are undefined", () => {
-        const _schema = collection(
-          {
-            fields: [
-              { type: "string", name: "foo" },
-              { type: "string", name: "bar" },
-            ],
-            name: "users",
-          },
-          config,
-        );
+        const _schema = collection({
+          fields: [
+            { type: "string", name: "foo" },
+            { type: "string", name: "bar" },
+          ],
+          name: "users",
+        });
 
         expectTypeOf<
           GetHighlightsFromParams<
@@ -374,17 +331,14 @@ describe("search tests", () => {
     });
     describe("GetFieldsInDocumentFromParams", () => {
       it("should exclude fields from include_fields when both params are provided", () => {
-        const _schema = collection(
-          {
-            fields: [
-              { type: "string", name: "foo" },
-              { type: "string", name: "bar" },
-              { type: "string", name: "baz" },
-            ],
-            name: "users",
-          },
-          config,
-        );
+        const _schema = collection({
+          fields: [
+            { type: "string", name: "foo" },
+            { type: "string", name: "bar" },
+            { type: "string", name: "baz" },
+          ],
+          name: "users",
+        });
 
         expectTypeOf<
           GetFieldsInDocumentFromParams<
@@ -396,16 +350,13 @@ describe("search tests", () => {
       });
 
       it("should return include_fields when exclude_fields is undefined", () => {
-        const _schema = collection(
-          {
-            fields: [
-              { type: "string", name: "foo" },
-              { type: "string", name: "bar" },
-            ],
-            name: "users",
-          },
-          config,
-        );
+        const _schema = collection({
+          fields: [
+            { type: "string", name: "foo" },
+            { type: "string", name: "bar" },
+          ],
+          name: "users",
+        });
 
         expectTypeOf<
           GetFieldsInDocumentFromParams<
@@ -417,16 +368,13 @@ describe("search tests", () => {
       });
 
       it("should exclude fields from all fields when only exclude_fields provided", () => {
-        const _schema = collection(
-          {
-            fields: [
-              { type: "string", name: "foo" },
-              { type: "string", name: "bar" },
-            ],
-            name: "users",
-          },
-          config,
-        );
+        const _schema = collection({
+          fields: [
+            { type: "string", name: "foo" },
+            { type: "string", name: "bar" },
+          ],
+          name: "users",
+        });
         expectTypeOf<
           GetFieldsInDocumentFromParams<
             typeof _schema.schema.fields,
@@ -437,16 +385,13 @@ describe("search tests", () => {
       });
 
       it("should return all fields when both params are undefined", () => {
-        const _schema = collection(
-          {
-            fields: [
-              { type: "string", name: "foo" },
-              { type: "string", name: "bar" },
-            ],
-            name: "users",
-          },
-          config,
-        );
+        const _schema = collection({
+          fields: [
+            { type: "string", name: "foo" },
+            { type: "string", name: "bar" },
+          ],
+          name: "users",
+        });
 
         expectTypeOf<
           GetFieldsInDocumentFromParams<
@@ -458,18 +403,15 @@ describe("search tests", () => {
       });
 
       it("should handle object fields correctly", () => {
-        const _schema = collection(
-          {
-            fields: [
-              { type: "string", name: "foo" },
-              { type: "object", name: "bar" },
-              { type: "string", name: "bar.baz" },
-            ],
-            enable_nested_fields: true,
-            name: "users",
-          },
-          config,
-        );
+        const _schema = collection({
+          fields: [
+            { type: "string", name: "foo" },
+            { type: "object", name: "bar" },
+            { type: "string", name: "bar.baz" },
+          ],
+          enable_nested_fields: true,
+          name: "users",
+        });
 
         expectTypeOf<
           GetFieldsInDocumentFromParams<
@@ -481,16 +423,13 @@ describe("search tests", () => {
       });
 
       it("should return empty array when all fields are excluded", () => {
-        const _schema = collection(
-          {
-            fields: [
-              { type: "string", name: "foo" },
-              { type: "string", name: "bar" },
-            ],
-            name: "users",
-          },
-          config,
-        );
+        const _schema = collection({
+          fields: [
+            { type: "string", name: "foo" },
+            { type: "string", name: "bar" },
+          ],
+          name: "users",
+        });
 
         expectTypeOf<
           GetFieldsInDocumentFromParams<

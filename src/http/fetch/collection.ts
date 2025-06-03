@@ -25,10 +25,11 @@ import type {
   SubsetTuple,
 } from "@/search";
 
+import { getConfiguration } from "@/config";
 import { makeRequest } from "@/http/fetch/request";
 import { ARRAY_KEYS } from "@/search";
 
-async function retrieveAllCollections(config: Configuration): Promise<
+async function retrieveAllCollections(config?: Configuration): Promise<
   (OmitDefaultSortingField<Collection> & {
     created_at: number;
     num_documents: number;
@@ -37,7 +38,7 @@ async function retrieveAllCollections(config: Configuration): Promise<
 > {
   return await makeRequest({
     endpoint: "/collections",
-    config,
+    config: getConfiguration(config),
     method: "GET",
   });
 }
@@ -68,7 +69,6 @@ function collection<
       : Fields[K];
     };
   },
-  config: Configuration,
 ): CollectionOperations<
   CollectionCreate<
     [{ name: "id"; type: "string" }, ...Fields],
@@ -91,13 +91,13 @@ function collection<
   return {
     schema: collectionSchema,
 
-    async create(options?: CollectionCreateOptions) {
+    async create(options?: CollectionCreateOptions, config?: Configuration) {
       const params = new URLSearchParams(options);
 
       return await makeRequest({
         body: collectionSchema,
         endpoint: "/collections",
-        config,
+        config: getConfiguration(config),
         method: "POST",
         params,
       });
@@ -105,28 +105,29 @@ function collection<
 
     async update<const T extends { fields: CollectionField[]; name: string }>(
       collection: T,
+      config?: Configuration,
     ) {
       return await makeRequest({
         body: { fields: collection.fields },
         endpoint: `/collections/${encodeURIComponent(collection.name)}`,
-        config,
+        config: getConfiguration(config),
         method: "PATCH",
       });
     },
 
-    async retrieve() {
+    async retrieve(config?: Configuration) {
       return await makeRequest({
         endpoint: `/collections/${encodeURIComponent(schema.name)}`,
-        config,
+        config: getConfiguration(config),
         method: "GET",
       });
     },
 
-    async delete(options?: CollectionDeleteOptions) {
+    async delete(options?: CollectionDeleteOptions, config?: Configuration) {
       if (!options) {
         return await makeRequest({
           endpoint: `/collections/${encodeURIComponent(schema.name)}`,
-          config,
+          config: getConfiguration(config),
           method: "DELETE",
         });
       }
@@ -135,7 +136,7 @@ function collection<
 
       return await makeRequest({
         endpoint: `/collections/${encodeURIComponent(schema.name)}`,
-        config,
+        config: getConfiguration(config),
         method: "DELETE",
         params,
       });
@@ -187,6 +188,7 @@ function collection<
         Fields,
         EnableV1Highlights
       >,
+      config?: Configuration,
     ) {
       // Ugly, but needed in order to check for holes in the searchParams object
       for (const [key, value] of Object.entries(searchParams)) {
@@ -202,7 +204,7 @@ function collection<
 
       return await makeRequest({
         endpoint: `/collections/${encodeURIComponent(schema.name)}/documents/search`,
-        config,
+        config: getConfiguration(config),
         method: "GET",
         params: urlParams,
       });
@@ -214,8 +216,8 @@ async function _createCollection<
   const T extends OmitDefaultSortingField<Collection>,
 >(
   collection: T,
-  config: Configuration,
   options?: CollectionCreateOptions,
+  config?: Configuration,
 ): Promise<
   T extends OmitDefaultSortingField<Collection> ?
     T & {
@@ -234,7 +236,7 @@ async function _createCollection<
   return await makeRequest({
     body: collection,
     endpoint: "/collections",
-    config,
+    config: getConfiguration(config),
     method: "POST",
     params,
   });
@@ -244,12 +246,12 @@ async function _updateCollection<
   const T extends { fields: CollectionField[]; name: string },
 >(
   collection: T,
-  config: Configuration,
+  config?: Configuration,
 ): Promise<{ fields: CollectionField<string, string>[] }> {
   return await makeRequest({
     body: { fields: collection.fields },
     endpoint: `/collections/${encodeURIComponent(collection.name)}`,
-    config,
+    config: getConfiguration(config),
     method: "PATCH",
   });
 }
@@ -301,7 +303,7 @@ async function _search<
     Fields,
     EnableV1Highlights
   >,
-  config: Configuration,
+  config?: Configuration,
 ): Promise<
   SearchResponse<
     Fields,
@@ -330,7 +332,7 @@ async function _search<
 
   return await makeRequest({
     endpoint: `/collections/${encodeURIComponent(name)}/documents/search`,
-    config,
+    config: getConfiguration(config),
     method: "GET",
     params: urlParams,
   });
@@ -340,7 +342,7 @@ async function _retrieveCollection<
   Name extends GlobalCollections[keyof GlobalCollections]["name"],
 >(
   name: Name,
-  config: Configuration,
+  config?: Configuration,
 ): Promise<
   OmitDefaultSortingField<Collection> & {
     created_at: number;
@@ -350,7 +352,7 @@ async function _retrieveCollection<
 > {
   return await makeRequest({
     endpoint: `/collections/${encodeURIComponent(name)}`,
-    config,
+    config: getConfiguration(config),
     method: "GET",
   });
 }
@@ -359,7 +361,7 @@ async function _deleteCollection<
   Name extends GlobalCollections[keyof GlobalCollections]["name"],
 >(
   name: Name,
-  config: Configuration,
+  config?: Configuration,
   options?: CollectionDeleteOptions,
 ): Promise<
   Collection & {
@@ -371,7 +373,7 @@ async function _deleteCollection<
   if (!options) {
     return await makeRequest({
       endpoint: `/collections/${encodeURIComponent(name)}`,
-      config,
+      config: getConfiguration(config),
       method: "DELETE",
     });
   }
@@ -380,7 +382,7 @@ async function _deleteCollection<
 
   return await makeRequest({
     endpoint: `/collections/${encodeURIComponent(name)}`,
-    config,
+    config: getConfiguration(config),
     method: "DELETE",
     params,
   });
