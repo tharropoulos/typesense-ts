@@ -185,6 +185,57 @@ type QueryableFields<T extends CollectionField[]> = {
   : undefined;
 };
 
+type ChildFields<T extends CollectionField[]> = {
+  [K in keyof T]: T[K] extends { name: infer Name } ?
+    Name extends `${infer Parent}.${string}` ?
+      Parent extends ObjectFields<T>[number] ?
+        T[K]
+      : never
+    : never
+  : never;
+};
+
+type GetParentName<T extends string, Acc extends string = ""> =
+  T extends `${infer First}.${infer Rest}` ?
+    Rest extends `${string}.${string}` ?
+      GetParentName<Rest, Acc extends "" ? First : `${Acc}.${First}`>
+    : Acc extends "" ? First
+    : `${Acc}.${First}`
+  : never;
+
+type IsDirectChild<FieldName extends string, Parent extends string> =
+  FieldName extends `${Parent}.${infer Child}` ?
+    Child extends `${string}.${string}` ?
+      false
+    : true
+  : false;
+
+type GetSiblings<
+  Fields extends CollectionField[],
+  Parent extends string,
+  Acc extends string[] = [],
+> =
+  Fields extends (
+    readonly [
+      infer First extends CollectionField,
+      ...infer Rest extends CollectionField[],
+    ]
+  ) ?
+    IsDirectChild<First["name"], Parent> extends true ?
+      GetSiblings<Rest, Parent, [...Acc, First["name"]]>
+    : GetSiblings<Rest, Parent, Acc>
+  : Acc;
+
+type GetImmidateParentAndSiblings<
+  Fields extends CollectionField[],
+  FieldName extends string,
+> =
+  FieldName extends `${string}.${string}` ?
+    GetParentName<FieldName> extends infer Parent extends string ?
+      [Parent, ...GetSiblings<Fields, Parent>]
+    : never
+  : [never, FieldName];
+
 type ObjectFields<T extends CollectionField[]> = RemoveType<
   T extends [infer First, ...infer Rest] ?
     [
@@ -848,6 +899,7 @@ export type {
   FieldType,
   DotLevels,
   FieldTypeMap,
+  ChildFields,
   ObjectFields,
   FindBreakingPoint,
   GlobalCollections,
@@ -860,6 +912,7 @@ export type {
   CollectionFieldFromTuple,
   CounterFields,
   UnionToIntersection,
+  GetImmidateParentAndSiblings,
 };
 
 export { collection };
