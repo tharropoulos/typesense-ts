@@ -1,4 +1,4 @@
-import type { Alias, BaseAlias, GlobalAliases } from "@/alias";
+import type { Alias, AliasOperations, BaseAlias, GlobalAliases } from "@/alias";
 import type { GlobalCollections } from "@/collection/base";
 import type { Configuration } from "@/config";
 
@@ -54,4 +54,42 @@ async function deleteAlias<
   });
 }
 
-export { upsertAlias, retrieveAlias, retrieveAllAliases, deleteAlias };
+function alias<
+  const Name extends string,
+  const CollectionName extends
+    GlobalCollections[keyof GlobalCollections]["name"],
+>(
+  alias: Alias<Name, CollectionName>,
+  config: Configuration,
+): AliasOperations<Name, CollectionName> {
+  return {
+    alias,
+
+    async retrieve() {
+      return await makeRequest({
+        endpoint: `/aliases/${encodeURIComponent(alias.name)}`,
+        config,
+        method: "GET",
+      });
+    },
+
+    async delete() {
+      return await makeRequest({
+        endpoint: `/aliases/${encodeURIComponent(alias.name)}`,
+        config,
+        method: "DELETE",
+      });
+    },
+
+    async upsert() {
+      return await makeRequest({
+        body: alias,
+        endpoint: `/aliases/${encodeURIComponent(alias.name)}`,
+        config,
+        method: "PUT",
+      });
+    },
+  };
+}
+
+export { alias, upsertAlias, retrieveAlias, retrieveAllAliases, deleteAlias };
