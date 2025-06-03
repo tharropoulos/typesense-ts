@@ -1,4 +1,5 @@
 import type {
+  ChildFields,
   CollectionField,
   GetSchemaFromName,
   GlobalCollections,
@@ -53,6 +54,9 @@ type MultiSearchParamsEntry<
   FacetByTuple extends
     | FacetableFieldKeys<ExtractFields<Schema>>[]
     | undefined = undefined,
+  FacetReturnParents extends
+    | FacetableFieldKeys<ChildFields<Fields>>[]
+    | undefined = undefined,
   GroupByTuple extends
     | FacetableFieldKeys<ExtractFields<Schema>>[]
     | undefined = undefined,
@@ -71,6 +75,7 @@ type MultiSearchParamsEntry<
   IncludeFieldsTuple,
   ExcludeFieldsTuple,
   FacetByTuple,
+  FacetReturnParents,
   GroupByTuple,
   QueryByLength,
   Fields,
@@ -96,6 +101,9 @@ type MultiSearchResponse<
   IncludeFieldsTuple extends IncludeFields<Fields> | undefined,
   ExcludeFieldsTuple extends ExcludeFields<Fields> | undefined,
   FacetByTuple extends FacetableFieldKeys<Fields>[] | undefined,
+  FacetReturnParents extends
+    | FacetableFieldKeys<ChildFields<Fields>>[]
+    | undefined,
   GroupByTuple extends FacetableFieldKeys<Fields>[] | undefined,
   Q extends string,
   EnableV1Highlights extends boolean,
@@ -106,6 +114,7 @@ type MultiSearchResponse<
   IncludeFieldsTuple,
   ExcludeFieldsTuple,
   FacetByTuple,
+  FacetReturnParents,
   GroupByTuple,
   Q,
   EnableV1Highlights
@@ -124,6 +133,7 @@ type MultiSearchResultEntry<T> =
       infer IncludeFieldsTuple,
       infer ExcludeFieldsTuple,
       infer FacetByTuple,
+      infer FacetReturnParents,
       infer GroupByTuple,
       infer _QueryByLength,
       infer Fields,
@@ -137,6 +147,7 @@ type MultiSearchResultEntry<T> =
       IncludeFieldsTuple,
       ExcludeFieldsTuple,
       FacetByTuple,
+      FacetReturnParents,
       GroupByTuple,
       Q,
       EnableV1Highlights
@@ -155,6 +166,7 @@ type MultiSearchResultEntry<T> =
  * @template IncludeFieldsTuple - Fields to include
  * @template ExcludeFieldsTuple - Fields to exclude
  * @template FacetByTuple - Fields to facet by
+ * @template FacetReturnParents - Fields to return parents for
  * @template GroupByTuple - Fields to group by
  * @template QueryByLength - Length of query fields tuple
  * @template Fields - Collection fields
@@ -172,6 +184,7 @@ type MultiSearchResultEntry<T> =
  *   include_fields: ["name", "price", "brand"],
  *   exclude_fields: ["description"],
  *   facet_by: ["category"],
+ *   facet_return_parent: ["category.subcategory"],
  *   group_by: ["brand"],
  *   per_page: 20
  * });
@@ -201,6 +214,9 @@ function multisearchEntry<
   const FacetByTuple extends
     | FacetableFieldKeys<ExtractFields<Schema>>[]
     | undefined = undefined,
+  const FacetReturnParents extends
+    | FacetableFieldKeys<ChildFields<Fields>>[]
+    | undefined = undefined,
   const GroupByTuple extends
     | FacetableFieldKeys<ExtractFields<Schema>>[]
     | undefined = undefined,
@@ -220,6 +236,7 @@ function multisearchEntry<
     IncludeFieldsTuple,
     ExcludeFieldsTuple,
     FacetByTuple,
+    FacetReturnParents,
     GroupByTuple,
     QueryByLength,
     Fields,
@@ -236,6 +253,7 @@ function multisearchEntry<
   IncludeFieldsTuple,
   ExcludeFieldsTuple,
   FacetByTuple,
+  FacetReturnParents,
   GroupByTuple,
   QueryByLength,
   Fields,

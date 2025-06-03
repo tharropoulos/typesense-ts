@@ -1,4 +1,5 @@
 import type {
+  ChildFields,
   Collection,
   CollectionField,
   CollectionFieldFromTuple,
@@ -7,6 +8,7 @@ import type {
   ExtractFields,
   FacetableFieldKeys,
   FindBreakingPoint,
+  GetImmidateParentAndSiblings,
   InferNativeType,
   InfixableFieldKeys,
   ObjectFields,
@@ -211,10 +213,13 @@ interface FilterParams {
 interface FacetParams<
   Fields extends CollectionField[],
   FacetByTuple extends FacetableFieldKeys<Fields>[] | undefined,
+  FacetReturnParents extends
+    | FacetableFieldKeys<ChildFields<Fields>>[]
+    | undefined,
 > {
   facet_by?: FacetByTuple; // Todo
   facet_query?: string; //Todo;
-  facet_return_parent?: string; //  Todo;
+  facet_return_parent?: FacetReturnParents;
   facet_query_num_typos?: number;
   facet_sample_percent?: NumberRange<0, 100>;
   facet_number_threshold?: number;
@@ -322,6 +327,9 @@ type SearchParams<
   IncludeFieldsTuple extends IncludeFields<Fields> | undefined = undefined,
   ExcludeFieldTuple extends ExcludeFields<Fields> | undefined = undefined,
   FacetByTuple extends FacetableFieldKeys<Fields>[] | undefined = undefined,
+  FacetReturnParents extends
+    | FacetableFieldKeys<ChildFields<Fields>>[]
+    | undefined = undefined,
   GroupByTuple extends FacetableFieldKeys<Fields>[] | undefined = undefined,
   L extends number = LengthOf<QueryByTuple>,
   Fields extends CollectionField[] = ExtractFields<Schema>,
@@ -329,7 +337,7 @@ type SearchParams<
 > =
   ParseSort<SortBy, Schema> extends true ?
     ParseFilter<FilterBy, Schema> extends true ?
-      FacetParams<Fields, FacetByTuple> &
+      FacetParams<Fields, FacetByTuple, FacetReturnParents> &
         QueryParams<Fields, Q, QueryByTuple, L> &
         RankingParams<Fields, QueryByTuple, L> &
         FilterParams &
@@ -400,6 +408,7 @@ const ARRAY_KEYS = {
   query_by_weights: true,
   stopwords: true,
   num_typos: true,
+  facet_return_parent: true,
 } as const satisfies Record<NonNullable<ArraySearchParams>, true>;
 
 interface BaseHighlightV1<T extends CollectionField> {
@@ -680,12 +689,21 @@ type DistributeHighlight<
 type DistributeFacetCounts<
   Fields extends CollectionField[],
   FacetByTuple extends FacetableFieldKeys<Fields>[] | undefined,
+  FacetReturnParents extends
+    | FacetableFieldKeys<ChildFields<Fields>>[]
+    | undefined,
 > =
   FacetByTuple extends undefined ? []
   : FacetByTuple extends readonly [...infer F] ?
     {
       [K in keyof F]: FacetCount<
-        CollectionFieldFromTuple<[F[K]] & string[], Fields>[number]
+        CollectionFieldFromTuple<[F[K]] & string[], Fields>[number],
+        Fields,
+        FacetReturnParents extends readonly [...infer R] ?
+          R[number] extends string ?
+            R[number]
+          : never
+        : undefined
       >;
     }
   : never;
@@ -780,18 +798,44 @@ type RemoveMatch<
 /**
  * Facet count type for facets in a search response
  */
-interface FacetCount<Field extends CollectionField> {
-  counts: {
-    count: number;
-    highlighted: string;
-    value: string;
-  }[];
-  field_name: Field["name"];
-  sampled: boolean;
-  stats: {
-    total_values: number;
-  };
-}
+type FacetCount<
+  Field extends CollectionField,
+  Fields extends CollectionField[],
+  FacetReturnParent extends string | undefined,
+> =
+  FacetReturnParent extends undefined ?
+    {
+      counts: {
+        count: number;
+        highlighted: string;
+        value: string;
+      }[];
+      field_name: Field["name"];
+      sampled: boolean;
+      stats: {
+        total_values: number;
+      };
+    }
+  : {
+      counts: {
+        count: number;
+        highlighted: string;
+        value: string;
+        parent: InferNativeType<
+          CollectionFieldFromTuple<
+            GetImmidateParentAndSiblings<Fields, FacetReturnParent & string> &
+              string[],
+            Fields
+          > &
+            CollectionField[]
+        >;
+      }[];
+      field_name: Field["name"];
+      sampled: boolean;
+      stats: {
+        total_values: number;
+      };
+    };
 
 /**
  * A search response
@@ -812,11 +856,14 @@ type SearchResponse<
   IncludeFieldsTuple extends IncludeFields<Fields> | undefined,
   ExcludeFieldsTuple extends ExcludeFields<Fields> | undefined,
   FacetByTuple extends FacetableFieldKeys<Fields>[] | undefined,
+  FacetReturnParents extends
+    | FacetableFieldKeys<ChildFields<Fields>>[]
+    | undefined,
   GroupByTuple extends FacetableFieldKeys<Fields>[] | undefined,
   Q extends string,
   EnableV1Highlights extends boolean,
 > = {
-  facet_counts: DistributeFacetCounts<Fields, FacetByTuple>;
+  facet_counts: DistributeFacetCounts<Fields, FacetByTuple, FacetReturnParents>;
   found: number;
   hits: Hit<
     Fields,

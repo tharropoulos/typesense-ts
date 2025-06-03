@@ -1,4 +1,5 @@
 import type {
+  ChildFields,
   Collection,
   CreateOptions as CollectionCreateOptions,
   DeleteOptions as CollectionDeleteOptions,
@@ -151,6 +152,9 @@ async function search<
   const FacetByTuple extends
     | FacetableFieldKeys<Fields>[]
     | undefined = undefined,
+  const FacetReturnParents extends
+    | FacetableFieldKeys<ChildFields<Fields>>[]
+    | undefined = undefined,
   const GroupByTuple extends
     | FacetableFieldKeys<Fields>[]
     | undefined = undefined,
@@ -169,6 +173,7 @@ async function search<
     IncludeFieldsTuple,
     ExcludeFieldsTuple,
     FacetByTuple,
+    FacetReturnParents,
     GroupByTuple,
     QueryByLength,
     Fields,
@@ -183,6 +188,7 @@ async function search<
     IncludeFieldsTuple,
     ExcludeFieldsTuple,
     FacetByTuple,
+    FacetReturnParents,
     GroupByTuple,
     Q,
     EnableV1Highlights
