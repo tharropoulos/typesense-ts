@@ -2,6 +2,7 @@ import type { Alias, AliasOperations, BaseAlias, GlobalAliases } from "@/alias";
 import type { GlobalCollections } from "@/collection/base";
 import type { Configuration } from "@/config";
 
+import { getConfiguration } from "@/config";
 import { makeRequest } from "@/http/fetch/request";
 
 async function _upsertAlias<
@@ -10,12 +11,12 @@ async function _upsertAlias<
     GlobalCollections[keyof GlobalCollections]["name"],
 >(
   alias: Alias<Name, CollectionName>,
-  config: Configuration,
+  config?: Configuration,
 ): Promise<Alias<Name, CollectionName>> {
   return makeRequest({
     body: alias,
     endpoint: `/aliases/${encodeURIComponent(alias.name)}`,
-    config,
+    config: getConfiguration(config),
     method: "PUT",
   });
 }
@@ -24,20 +25,20 @@ async function _retrieveAlias<
   const Name extends GlobalAliases[keyof GlobalAliases]["name"],
   const CollectionName extends
     GlobalCollections[keyof GlobalCollections]["name"] = GlobalCollections[keyof GlobalCollections]["name"],
->(name: Name, config: Configuration): Promise<Alias<Name, CollectionName>> {
+>(name: Name, config?: Configuration): Promise<Alias<Name, CollectionName>> {
   return await makeRequest({
     endpoint: `/aliases/${encodeURIComponent(name)}`,
-    config,
+    config: getConfiguration(config),
     method: "GET",
   });
 }
 
 async function retrieveAllAliases(
-  config: Configuration,
+  config?: Configuration,
 ): Promise<{ aliases: BaseAlias[] }> {
   return await makeRequest({
     endpoint: "/aliases",
-    config,
+    config: getConfiguration(config),
     method: "GET",
   });
 }
@@ -46,10 +47,10 @@ async function _deleteAlias<
   const Name extends GlobalAliases[keyof GlobalAliases]["name"],
   const CollectionName extends
     GlobalCollections[keyof GlobalCollections]["name"] = GlobalCollections[keyof GlobalCollections]["name"],
->(name: Name, config: Configuration): Promise<Alias<Name, CollectionName>> {
+>(name: Name, config?: Configuration): Promise<Alias<Name, CollectionName>> {
   return makeRequest({
     endpoint: `/aliases/${encodeURIComponent(name)}`,
-    config,
+    config: getConfiguration(config),
     method: "DELETE",
   });
 }
@@ -58,34 +59,31 @@ function alias<
   const Name extends string,
   const CollectionName extends
     GlobalCollections[keyof GlobalCollections]["name"],
->(
-  alias: Alias<Name, CollectionName>,
-  config: Configuration,
-): AliasOperations<Name, CollectionName> {
+>(alias: Alias<Name, CollectionName>): AliasOperations<Name, CollectionName> {
   return {
     alias,
 
-    async retrieve() {
+    async retrieve(config?: Configuration) {
       return await makeRequest({
         endpoint: `/aliases/${encodeURIComponent(alias.name)}`,
-        config,
+        config: getConfiguration(config),
         method: "GET",
       });
     },
 
-    async delete() {
+    async delete(config?: Configuration) {
       return await makeRequest({
         endpoint: `/aliases/${encodeURIComponent(alias.name)}`,
-        config,
+        config: getConfiguration(config),
         method: "DELETE",
       });
     },
 
-    async upsert() {
+    async upsert(config?: Configuration) {
       return await makeRequest({
         body: alias,
         endpoint: `/aliases/${encodeURIComponent(alias.name)}`,
-        config,
+        config: getConfiguration(config),
         method: "PUT",
       });
     },

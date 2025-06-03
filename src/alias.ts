@@ -1,4 +1,5 @@
 import type { GlobalCollections } from "@/collection/base";
+import type { Configuration } from "@/config";
 
 /**
  * Alias for a collection name
@@ -46,9 +47,9 @@ export interface AliasOperations<
   CollectionName extends GlobalCollections[keyof GlobalCollections]["name"],
 > {
   readonly alias: Alias<Name, CollectionName>;
-  retrieve(): Promise<Alias<Name, CollectionName>>;
-  delete(): Promise<Alias<Name, CollectionName>>;
-  upsert(): Promise<Alias<Name, CollectionName>>;
+  retrieve(config?: Configuration): Promise<Alias<Name, CollectionName>>;
+  delete(config?: Configuration): Promise<Alias<Name, CollectionName>>;
+  upsert(config?: Configuration): Promise<Alias<Name, CollectionName>>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type

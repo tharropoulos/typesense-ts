@@ -1,23 +1,15 @@
 import { collection } from "@/collection/base";
-import { configure } from "@/config";
+import { setDefaultConfiguration } from "@/config";
 import { alias, retrieveAllAliases } from "@/http/fetch/alias";
 import { upAll } from "docker-compose";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const isCi = process.env.CI;
 
-const config = configure({
-  apiKey: "xyz",
-  nodes: [{ url: "http://localhost:8108" }],
+const testAlias = alias({
+  collection_name: "alias_counter",
+  name: "alias",
 });
-
-const testAlias = alias(
-  {
-    collection_name: "alias_counter",
-    name: "alias",
-  },
-  config,
-);
 
 const aliasCollection = collection({
   fields: [
@@ -55,6 +47,11 @@ beforeAll(async () => {
   if (!isCi) {
     await upAll({ cwd: __dirname, log: true });
   }
+
+  setDefaultConfiguration({
+    apiKey: "xyz",
+    nodes: [{ host: "localhost", port: 8108, protocol: "http" }],
+  });
 
   const counter = await fetch("http://localhost:8108/collections", {
     method: "POST",
@@ -108,36 +105,27 @@ describe("aliases", () => {
       });
     });
     it("shouldn't create an alias for a non-existing collection", () => {
-      alias(
-        {
-          // @ts-expect-error - non-existing collection
-          collection_name: "non-existing-collection",
-          name: "alias",
-        },
-        config,
-      );
+      alias({
+        // @ts-expect-error - non-existing collection
+        collection_name: "non-existing-collection",
+        name: "alias",
+      });
     });
     it("should create an alias for an existing collection", async () => {
-      const _alias = alias(
-        {
-          name: "alias",
-          collection_name: "source",
-        },
-        config,
-      );
+      const _alias = alias({
+        name: "alias",
+        collection_name: "source",
+      });
       await expect(_alias.upsert()).resolves.toMatchObject({
         name: "alias",
         collection_name: "source",
       });
     });
     it("should update an existing alias", async () => {
-      const _alias = alias(
-        {
-          name: "alias",
-          collection_name: "counter",
-        },
-        config,
-      );
+      const _alias = alias({
+        name: "alias",
+        collection_name: "counter",
+      });
       await expect(_alias.upsert()).resolves.toMatchObject({
         name: "alias",
         collection_name: "counter",
@@ -165,14 +153,11 @@ describe("aliases", () => {
       });
     });
     it("shouldn't retrieve a non-existing alias", () => {
-      const _alias = alias(
-        {
-          name: "non-existing-alias",
-          // @ts-expect-error - non-existing alias
-          collection_name: "non-existing-collection",
-        },
-        config,
-      );
+      const _alias = alias({
+        name: "non-existing-alias",
+        // @ts-expect-error - non-existing alias
+        collection_name: "non-existing-collection",
+      });
       return expect(_alias.retrieve()).rejects.toThrow("Not Found");
     });
     it("should retrieve an existing alias", async () => {
@@ -202,7 +187,7 @@ describe("aliases", () => {
       });
     });
     it("should retrieve all aliases", async () => {
-      await expect(retrieveAllAliases(config)).resolves.toMatchObject({
+      await expect(retrieveAllAliases()).resolves.toMatchObject({
         aliases: [testAlias.alias],
       });
     });
