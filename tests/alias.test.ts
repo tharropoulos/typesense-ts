@@ -1,21 +1,23 @@
-import { alias } from "@/alias";
 import { collection } from "@/collection/base";
 import { configure } from "@/config";
-import {
-  deleteAlias,
-  retrieveAlias,
-  retrieveAllAliases,
-  upsertAlias,
-} from "@/http/fetch/alias";
+import { alias, retrieveAllAliases } from "@/http/fetch/alias";
 import { upAll } from "docker-compose";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const isCi = process.env.CI;
 
-const testAlias = alias({
-  collection_name: "alias_counter",
-  name: "alias",
+const config = configure({
+  apiKey: "xyz",
+  nodes: [{ url: "http://localhost:8108" }],
 });
+
+const testAlias = alias(
+  {
+    collection_name: "alias_counter",
+    name: "alias",
+  },
+  config,
+);
 
 const aliasCollection = collection({
   fields: [
@@ -37,11 +39,6 @@ const aliasCounter = collection({
   name: "alias_counter",
 });
 
-const config = configure({
-  apiKey: "xyz",
-  nodes: [{ url: "http://localhost:8108" }],
-});
-
 declare module "@/collection/base" {
   interface GlobalCollections {
     aliasCounter: typeof aliasCounter;
@@ -50,7 +47,7 @@ declare module "@/collection/base" {
 }
 declare module "@/alias" {
   interface GlobalAliases {
-    testAlias: typeof testAlias;
+    testAlias: typeof testAlias.alias;
   }
 }
 
@@ -110,24 +107,41 @@ describe("aliases", () => {
         },
       });
     });
-    it("shouldn't create an alias for a non-existing collection", () =>
-      upsertAlias(
+    it("shouldn't create an alias for a non-existing collection", () => {
+      alias(
         {
           // @ts-expect-error - non-existing collection
           collection_name: "non-existing-collection",
           name: "alias",
         },
         config,
-      ));
+      );
+    });
     it("should create an alias for an existing collection", async () => {
-      await expect(
-        upsertAlias({ name: "alias", collection_name: "source" }, config),
-      ).resolves.toMatchObject({ name: "alias", collection_name: "source" });
+      const _alias = alias(
+        {
+          name: "alias",
+          collection_name: "source",
+        },
+        config,
+      );
+      await expect(_alias.upsert()).resolves.toMatchObject({
+        name: "alias",
+        collection_name: "source",
+      });
     });
     it("should update an existing alias", async () => {
-      await expect(
-        upsertAlias({ name: "alias", collection_name: "counter" }, config),
-      ).resolves.toMatchObject({ name: "alias", collection_name: "counter" });
+      const _alias = alias(
+        {
+          name: "alias",
+          collection_name: "counter",
+        },
+        config,
+      );
+      await expect(_alias.upsert()).resolves.toMatchObject({
+        name: "alias",
+        collection_name: "counter",
+      });
     });
   });
   describe("retrieveAlias", () => {
@@ -138,7 +152,7 @@ describe("aliases", () => {
           "Content-Type": "application/json",
           "X-TYPESENSE-API-KEY": "xyz",
         },
-        body: JSON.stringify(testAlias),
+        body: JSON.stringify(testAlias.alias),
       });
     });
     afterAll(async () => {
@@ -151,14 +165,19 @@ describe("aliases", () => {
       });
     });
     it("shouldn't retrieve a non-existing alias", () => {
-      return expect(
-        // @ts-expect-error - non-existing alias
-        retrieveAlias("non-existing-alias", config),
-      ).rejects.toThrow("Not Found");
+      const _alias = alias(
+        {
+          name: "non-existing-alias",
+          // @ts-expect-error - non-existing alias
+          collection_name: "non-existing-collection",
+        },
+        config,
+      );
+      return expect(_alias.retrieve()).rejects.toThrow("Not Found");
     });
     it("should retrieve an existing alias", async () => {
-      await expect(retrieveAlias("alias", config)).resolves.toMatchObject(
-        testAlias,
+      await expect(testAlias.retrieve()).resolves.toMatchObject(
+        testAlias.alias,
       );
     });
   });
@@ -170,7 +189,7 @@ describe("aliases", () => {
           "Content-Type": "application/json",
           "X-TYPESENSE-API-KEY": "xyz",
         },
-        body: JSON.stringify(testAlias),
+        body: JSON.stringify(testAlias.alias),
       });
     });
     afterAll(async () => {
@@ -184,7 +203,7 @@ describe("aliases", () => {
     });
     it("should retrieve all aliases", async () => {
       await expect(retrieveAllAliases(config)).resolves.toMatchObject({
-        aliases: [testAlias],
+        aliases: [testAlias.alias],
       });
     });
   });
@@ -196,19 +215,11 @@ describe("aliases", () => {
           "Content-Type": "application/json",
           "X-TYPESENSE-API-KEY": "xyz",
         },
-        body: JSON.stringify(testAlias),
+        body: JSON.stringify(testAlias.alias),
       });
     });
     it("should delete an existing alias", async () => {
-      await expect(deleteAlias("alias", config)).resolves.toMatchObject(
-        testAlias,
-      );
-    });
-    it("shouldn't delete a non-existing alias", () => {
-      return expect(
-        // @ts-expect-error - non-existing alias
-        deleteAlias("non-existing-alias", config),
-      ).rejects.toThrow("Not Found");
+      await expect(testAlias.delete()).resolves.toMatchObject(testAlias.alias);
     });
   });
 });

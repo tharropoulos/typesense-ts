@@ -4,7 +4,7 @@ import type { Configuration } from "@/config";
 
 import { makeRequest } from "@/http/fetch/request";
 
-async function upsertAlias<
+async function _upsertAlias<
   const Name extends string,
   const CollectionName extends
     GlobalCollections[keyof GlobalCollections]["name"],
@@ -20,7 +20,7 @@ async function upsertAlias<
   });
 }
 
-async function retrieveAlias<
+async function _retrieveAlias<
   const Name extends GlobalAliases[keyof GlobalAliases]["name"],
   const CollectionName extends
     GlobalCollections[keyof GlobalCollections]["name"] = GlobalCollections[keyof GlobalCollections]["name"],
@@ -42,7 +42,7 @@ async function retrieveAllAliases(
   });
 }
 
-async function deleteAlias<
+async function _deleteAlias<
   const Name extends GlobalAliases[keyof GlobalAliases]["name"],
   const CollectionName extends
     GlobalCollections[keyof GlobalCollections]["name"] = GlobalCollections[keyof GlobalCollections]["name"],
@@ -92,4 +92,4 @@ function alias<
   };
 }
 
-export { alias, upsertAlias, retrieveAlias, retrieveAllAliases, deleteAlias };
+export { alias, retrieveAllAliases };
