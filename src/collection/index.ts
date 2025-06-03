@@ -129,6 +129,7 @@ export interface CollectionOperations<
       FilterBy,
       SortBy,
       Q,
+      Name,
       QueryByTuple,
       HighlightFieldsTuple,
       IncludeFieldsTuple,

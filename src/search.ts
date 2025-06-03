@@ -25,6 +25,7 @@ import type {
   OmitDefaultSortingField,
   TupleIncludes,
 } from "@/lib/utils";
+import type { CheckCollectionOverrides } from "@/override";
 
 type OperationMode = "off" | "always" | "fallback";
 
@@ -117,10 +118,10 @@ type TupleOfLength<
  * @template Fields The collection fields
  * @template QueryByTuple The query_by fields
  * @template L The length of the query_by fields
- * @todo Add support for override_tags
  */
 interface RankingParams<
   Fields extends CollectionField[],
+  CollectionName extends string,
   QueryByTuple extends QueryBy<Fields> = QueryBy<Fields>,
   L extends number = LengthOf<QueryByTuple>,
 > {
@@ -130,7 +131,7 @@ interface RankingParams<
   prioritize_exact_match?: boolean;
   text_match_type?: "max_score" | "max_weight";
   enable_overrides?: boolean;
-  override_tags?: string; //TODO
+  override_tags?: CheckCollectionOverrides<CollectionName>;
   pinned_hits?: `${string}:${string}`[];
   hidden_hits?: string[];
   filter_curated_hits?: boolean;
@@ -217,7 +218,7 @@ interface FacetParams<
     | FacetableFieldKeys<ChildFields<Fields>>[]
     | undefined,
 > {
-  facet_by?: FacetByTuple; // Todo
+  facet_by?: FacetByTuple;
   facet_query?: string; //Todo;
   facet_return_parent?: FacetReturnParents;
   facet_query_num_typos?: number;
@@ -319,6 +320,7 @@ type SearchParams<
   FilterBy extends string,
   SortBy extends string,
   Q extends "*" | (string & {}),
+  CollectionName extends string,
   QueryByTuple extends QueryBy<Fields>,
   HighlightFieldsTuple extends
     | "none"
@@ -339,7 +341,7 @@ type SearchParams<
     ParseFilter<FilterBy, Schema> extends true ?
       FacetParams<Fields, FacetByTuple, FacetReturnParents> &
         QueryParams<Fields, Q, QueryByTuple, L> &
-        RankingParams<Fields, QueryByTuple, L> &
+        RankingParams<Fields, CollectionName, QueryByTuple, L> &
         FilterParams &
         GroupParams<Fields, GroupByTuple> &
         CachingParams &
@@ -371,20 +373,22 @@ type ArraySearchParams<
   Q extends "*" | (string & {}) = "*" | (string & {}),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   QueryByTuple extends QueryBy<ExtractFields<Schema>> = any,
+  CollectionName extends string = string,
 > = {
   [K in keyof SearchParams<
     Schema,
     FilterBy,
     SortBy,
     Q,
+    CollectionName,
     QueryByTuple
   >]: NonNullable<
-    SearchParams<Schema, FilterBy, SortBy, Q, QueryByTuple>[K]
+    SearchParams<Schema, FilterBy, SortBy, Q, CollectionName, QueryByTuple>[K]
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   > extends any[] | TupleOfLength<any> ?
     K
   : NonNullable<
-    SearchParams<Schema, FilterBy, SortBy, Q, QueryByTuple>[K]
+    SearchParams<Schema, FilterBy, SortBy, Q, CollectionName, QueryByTuple>[K]
   > extends infer T ?
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     T extends TupleOfLength<any, any> ? K
@@ -392,7 +396,14 @@ type ArraySearchParams<
     T extends TupleOfLength<any, any> ? K
     : never
   : never;
-}[keyof SearchParams<Schema, FilterBy, SortBy, Q, QueryByTuple>];
+}[keyof SearchParams<
+  Schema,
+  FilterBy,
+  SortBy,
+  Q,
+  CollectionName,
+  QueryByTuple
+>];
 
 const ARRAY_KEYS = {
   query_by: true,
