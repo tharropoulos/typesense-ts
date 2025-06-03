@@ -141,13 +141,11 @@ interface NoHitsQueryRule<
 
 type Destinations =
   | GlobalCollections[keyof GlobalCollections]["name"]
-  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   | GlobalAliases[keyof GlobalAliases]["name"];
 
 type GetCounterField<
   Destination extends
     | GlobalCollections[keyof GlobalCollections]["name"]
-    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
     | GlobalAliases[keyof GlobalAliases]["name"],
 > =
   Destination extends GlobalCollections[keyof GlobalCollections]["name"] ?
