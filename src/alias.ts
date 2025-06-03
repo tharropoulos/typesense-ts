@@ -41,6 +41,16 @@ function alias<
   return alias;
 }
 
+export interface AliasOperations<
+  Name extends string,
+  CollectionName extends GlobalCollections[keyof GlobalCollections]["name"],
+> {
+  readonly alias: Alias<Name, CollectionName>;
+  retrieve(): Promise<Alias<Name, CollectionName>>;
+  delete(): Promise<Alias<Name, CollectionName>>;
+  upsert(): Promise<Alias<Name, CollectionName>>;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface GlobalAliases {}
 
