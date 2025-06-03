@@ -386,12 +386,4 @@ async function _deleteCollection<
   });
 }
 
-export {
-  collection,
-  retrieveAllCollections,
-  _createCollection as createCollection,
-  _updateCollection as updateCollection,
-  _search as search,
-  _retrieveCollection as retrieveCollection,
-  _deleteCollection as deleteCollection,
-};
+export { collection, retrieveAllCollections };

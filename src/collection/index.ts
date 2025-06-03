@@ -147,3 +147,7 @@ export interface CollectionOperations<
     >
   >;
 }
+
+export { validateCollectionUpdate } from "./update";
+export type * from "./base";
+export type * from "./update";

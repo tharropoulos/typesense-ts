@@ -1,6 +1,5 @@
-import { collection } from "@/collection/base";
 import { configure } from "@/config";
-import { createCollection } from "@/http/fetch/collection";
+import { collection } from "@/http/fetch";
 import { multisearch } from "@/http/fetch/multisearch";
 import { multisearchEntry } from "@/multisearch";
 import { upAll } from "docker-compose";
@@ -8,37 +7,43 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const isCi = process.env.CI;
 
-const _schema_1 = collection({
-  fields: [
-    { name: "foo", type: "string" },
-    { name: "bar", type: "int32" },
-    { name: "baz", type: "object" },
-    { name: "baz.qux", type: "string", facet: true },
-    { name: "quux", type: "string", infix: true },
-    { name: "quuz", type: "string", index: false },
-  ],
-  name: "multi_search_test_1",
-  enable_nested_fields: true,
-});
-
-const _schema_2 = collection({
-  fields: [
-    { name: "foo", type: "string" },
-    { name: "bar", type: "int32" },
-  ],
-  name: "multi_search_test_2",
-  enable_nested_fields: true,
-});
-
 const config = configure({
   apiKey: "xyz",
   nodes: [{ host: "localhost", port: 8108, protocol: "http" }],
 });
 
+const _schema_1 = collection(
+  {
+    fields: [
+      { name: "foo", type: "string" },
+      { name: "bar", type: "int32" },
+      { name: "baz", type: "object" },
+      { name: "baz.qux", type: "string", facet: true },
+      { name: "quux", type: "string", infix: true },
+      { name: "quuz", type: "string", index: false },
+    ],
+    name: "multi_search_test_1",
+    enable_nested_fields: true,
+  },
+  config,
+);
+
+const _schema_2 = collection(
+  {
+    fields: [
+      { name: "foo", type: "string" },
+      { name: "bar", type: "int32" },
+    ],
+    name: "multi_search_test_2",
+    enable_nested_fields: true,
+  },
+  config,
+);
+
 declare module "@/collection/base" {
   interface GlobalCollections {
-    multi_schema_1: typeof _schema_1;
-    multi_schema_2: typeof _schema_2;
+    multi_schema_1: typeof _schema_1.schema;
+    multi_schema_2: typeof _schema_2.schema;
   }
 }
 
@@ -46,8 +51,8 @@ beforeAll(async () => {
   if (!isCi) {
     await upAll({ cwd: __dirname, log: true });
   }
-  await createCollection(_schema_1, config);
-  await createCollection(_schema_2, config);
+  await _schema_1.create();
+  await _schema_2.create();
   const doc1 = await fetch(
     "http://localhost:8108/collections/multi_search_test_1/documents",
     {
