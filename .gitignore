@@ -27,3 +27,6 @@ buildtrace
 # typesense
 typesense-data
 
+
+# IDEs and editors
+.vscode
