@@ -119,4 +119,9 @@ export interface DocumentOperations<T extends Collection> {
       DocumentWriteParameters,
     config?: Configuration,
   ): Promise<UpdateResponse<DocId extends undefined ? undefined : string, T>>;
+
+  retrieve(
+    documentId: string,
+    config?: Configuration,
+  ): Promise<InferNativeType<T["fields"] & CollectionField[]>>;
 }

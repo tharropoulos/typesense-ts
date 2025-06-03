@@ -147,6 +147,14 @@ function collection<
         });
       },
 
+      async retrieve(documentId: string, config?: Configuration) {
+        return await makeRequest({
+          endpoint: `/collections/${encodeURIComponent(schema.name)}/documents/${encodeURIComponent(documentId)}`,
+          config: getConfiguration(config),
+          method: "GET",
+        });
+      },
+
       async create<
         const Doc extends boolean = false,
         const Id extends boolean = false,

@@ -1286,6 +1286,31 @@ describe("collection tests", () => {
         await schema.delete();
       });
     });
+    describe("retrieve", () => {
+      it("can retrieve a document via documentId", async () => {
+        const schema = collection({
+          name: "test",
+          fields: [
+            {
+              type: "string",
+              name: "title",
+            },
+          ],
+        });
+
+        await schema.create();
+
+        const createdDoc = await schema.documents.create({
+          title: "Test Title",
+        });
+
+        const retrievedDoc = await schema.documents.retrieve(createdDoc.id);
+
+        expect(retrievedDoc.title).toBe("Test Title");
+        expect(retrievedDoc.id).toBe(createdDoc.id);
+        await schema.delete();
+      });
+    });
   });
   describe("InferNativeType tests", () => {
     it("can infer the native type of a string", () => {
