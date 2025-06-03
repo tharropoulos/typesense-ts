@@ -889,6 +889,8 @@ export type {
   CounterFields,
   UnionToIntersection,
   GetImmidateParentAndSiblings,
+  DefaultSortingFields,
+  EmbeddingField,
 };
 
 export { collection };
