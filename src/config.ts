@@ -56,6 +56,49 @@ function configure(config: CreateConfiguration): Configuration {
   };
 }
 
+let defaultConfiguration: Configuration | null = null;
+
+/**
+ * Sets the default configuration that will be used by all HTTP methods
+ * when no config is explicitly provided.
+ */
+function setDefaultConfiguration(config: CreateConfiguration): void {
+  defaultConfiguration = configure(config);
+}
+
+/**
+ * Gets the current default configuration.
+ * Throws an error if no default configuration has been set.
+ */
+function getDefaultConfiguration(): Configuration {
+  if (!defaultConfiguration) {
+    throw new Error(
+      "No default configuration has been set. Please call `setDefaultConfiguration()` first or pass a config parameter to the method.",
+    );
+  }
+  return defaultConfiguration;
+}
+
+/**
+ * Gets the configuration to use - either the provided config or the default one.
+ */
+function getConfiguration(config?: Configuration): Configuration {
+  return config ?? getDefaultConfiguration();
+}
+
+/**
+ * Clears the default configuration.
+ */
+function clearDefaultConfiguration(): void {
+  defaultConfiguration = null;
+}
+
 export type { Configuration };
 
-export { configure };
+export {
+  configure,
+  setDefaultConfiguration,
+  getDefaultConfiguration,
+  getConfiguration,
+  clearDefaultConfiguration,
+};

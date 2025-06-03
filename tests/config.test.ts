@@ -1,5 +1,11 @@
-import { configure } from "@/config";
-import { describe, expect, it } from "vitest";
+import {
+  clearDefaultConfiguration,
+  configure,
+  getConfiguration,
+  getDefaultConfiguration,
+  setDefaultConfiguration,
+} from "@/config";
+import { afterEach, describe, expect, it } from "vitest";
 
 describe("configure", () => {
   it("should use provided numRetries when valid", () => {
@@ -108,5 +114,239 @@ describe("configure", () => {
 
     expect(result.nodes).toHaveLength(3);
     expect(result.numRetries).toBe(4); // 3 nodes + 1
+  });
+});
+
+describe("default configuration management", () => {
+  // Clean up after each test to avoid test interference
+  afterEach(() => {
+    clearDefaultConfiguration();
+  });
+
+  describe("setDefaultConfiguration", () => {
+    it("should set a default configuration", () => {
+      const config = configure({
+        apiKey: "test-api-key",
+        nodes: [{ host: "localhost", port: 8108, protocol: "http" }],
+        healthcheckIntervalSeconds: 30,
+      });
+
+      expect(() => setDefaultConfiguration(config)).not.toThrow();
+    });
+
+    it("should override previous default configuration", () => {
+      const config1 = configure({
+        apiKey: "api-key-1",
+        nodes: [{ host: "localhost", port: 8108, protocol: "http" }],
+      });
+
+      const config2 = configure({
+        apiKey: "api-key-2",
+        nodes: [
+          // @ts-expect-error - this host is invalid
+          { host: "different-host", port: 8109, protocol: "https" },
+        ],
+      });
+
+      setDefaultConfiguration(config1);
+      setDefaultConfiguration(config2);
+
+      const defaultConfig = getDefaultConfiguration();
+      expect(defaultConfig.apiKey).toBe("api-key-2");
+    });
+  });
+
+  describe("getDefaultConfiguration", () => {
+    it("should return the default configuration when set", () => {
+      const config = configure({
+        apiKey: "test-api-key",
+        nodes: [{ host: "localhost", port: 8108, protocol: "http" }],
+        numRetries: 5,
+      });
+
+      setDefaultConfiguration(config);
+      const defaultConfig = getDefaultConfiguration();
+
+      expect(defaultConfig.apiKey).toBe("test-api-key");
+      expect(defaultConfig.numRetries).toBe(5);
+    });
+
+    it("should throw error when no default configuration is set", () => {
+      expect(() => getDefaultConfiguration()).toThrow(
+        "No default configuration has been set. Please call `setDefaultConfiguration()` first or pass a config parameter to the method.",
+      );
+    });
+
+    it("should process configuration through configure() function", () => {
+      const config = configure({
+        apiKey: "test-api-key",
+        nodes: [
+          { host: "localhost", port: 8108, protocol: "http" },
+          { host: "localhost", port: 8109, protocol: "http" },
+        ],
+        // Not setting numRetries to test default calculation
+      });
+
+      setDefaultConfiguration(config);
+      const defaultConfig = getDefaultConfiguration();
+
+      // Should have calculated numRetries based on nodes length
+      expect(defaultConfig.numRetries).toBe(3); // 2 nodes + 1
+      expect(defaultConfig.healthcheckIntervalSeconds).toBe(60); // default value
+      expect(defaultConfig.retryIntervalSeconds).toBe(1); // default value
+    });
+  });
+
+  describe("getConfiguration", () => {
+    it("should return provided config when given", () => {
+      const defaultConfig = configure({
+        apiKey: "default-key",
+        // @ts-expect-error - this host is invalid
+        nodes: [{ host: "default-host", port: 8108, protocol: "http" }],
+      });
+
+      const providedConfig = configure({
+        apiKey: "provided-key",
+        nodes: [
+          // @ts-expect-error - this host is invalid
+          { host: "provided-host", port: 8109, protocol: "https" },
+        ],
+      });
+
+      setDefaultConfiguration(defaultConfig);
+      const result = getConfiguration(providedConfig);
+
+      expect(result.apiKey).toBe("provided-key");
+    });
+
+    it("should return default config when no config is provided", () => {
+      const defaultConfig = configure({
+        apiKey: "default-key",
+        // @ts-expect-error - this host is invalid
+        nodes: [{ host: "default-host", port: 8108, protocol: "http" }],
+      });
+
+      setDefaultConfiguration(defaultConfig);
+      const result = getConfiguration();
+
+      expect(result.apiKey).toBe("default-key");
+    });
+
+    it("should return default config when undefined is explicitly passed", () => {
+      const defaultConfig = configure({
+        apiKey: "default-key",
+        nodes: [
+          // @ts-expect-error - this host is invalid
+          { host: "default-host", port: 8108, protocol: "http" },
+        ],
+      });
+
+      setDefaultConfiguration(defaultConfig);
+      const result = getConfiguration(undefined);
+
+      expect(result.apiKey).toBe("default-key");
+    });
+
+    it("should throw error when no config provided and no default set", () => {
+      expect(() => getConfiguration()).toThrow(
+        "No default configuration has been set. Please call `setDefaultConfiguration()` first or pass a config parameter to the method.",
+      );
+    });
+
+    it("should throw error when undefined provided and no default set", () => {
+      expect(() => getConfiguration(undefined)).toThrow(
+        "No default configuration has been set. Please call `setDefaultConfiguration()` first or pass a config parameter to the method.",
+      );
+    });
+  });
+
+  describe("clearDefaultConfiguration", () => {
+    it("should clear the default configuration", () => {
+      const config = configure({
+        apiKey: "test-api-key",
+        nodes: [{ host: "localhost", port: 8108, protocol: "http" }],
+      });
+
+      setDefaultConfiguration(config);
+      expect(() => getDefaultConfiguration()).not.toThrow();
+
+      clearDefaultConfiguration();
+      expect(() => getDefaultConfiguration()).toThrow();
+    });
+
+    it("should not throw when called with no default configuration set", () => {
+      expect(() => clearDefaultConfiguration()).not.toThrow();
+    });
+  });
+
+  describe("integration scenarios", () => {
+    it("should handle multiple configurations in sequence", () => {
+      const config1 = configure({
+        apiKey: "key-1",
+        //  @ts-expect-error - invalid host
+        nodes: [{ host: "host-1", port: 8108, protocol: "http" }],
+      });
+
+      const config2 = configure({
+        apiKey: "key-2",
+        //  @ts-expect-error - invalid host
+        nodes: [{ host: "host-2", port: 8109, protocol: "https" }],
+      });
+
+      // Set first config
+      setDefaultConfiguration(config1);
+      expect(getDefaultConfiguration().apiKey).toBe("key-1");
+
+      // Override with second config
+      setDefaultConfiguration(config2);
+      expect(getDefaultConfiguration().apiKey).toBe("key-2");
+
+      // Clear and verify error
+      clearDefaultConfiguration();
+      expect(() => getDefaultConfiguration()).toThrow();
+    });
+
+    it("should handle complex configuration with all options", () => {
+      const config = configure({
+        apiKey: "complex-key",
+        nodes: [
+          // @ts-expect-error - invalid host
+          { host: "node1", port: 8108, protocol: "http" },
+          // @ts-expect-error - invalid host
+          { host: "node2", port: 8109, protocol: "https" },
+        ],
+        // @ts-expect-error - invalid host
+        nearestNode: { url: "http://nearest-node" },
+        randomizeNodes: true,
+        connectionTimeoutSeconds: 10,
+        timeoutSeconds: 30,
+        healthcheckIntervalSeconds: 45,
+        numRetries: 7,
+        retryIntervalSeconds: 3,
+        sendApiKeyAsQueryParam: true,
+        additionalHeaders: {
+          "Custom-Header": "custom-value",
+          "Another-Header": "another-value",
+        },
+      });
+
+      setDefaultConfiguration(config);
+      const defaultConfig = getDefaultConfiguration();
+
+      expect(defaultConfig.apiKey).toBe("complex-key");
+      expect(defaultConfig.nodes).toHaveLength(2);
+      expect(defaultConfig.nearestNode).toBeDefined();
+      expect(defaultConfig.randomizeNodes).toBe(true);
+      expect(defaultConfig.connectionTimeoutSeconds).toBe(10);
+      expect(defaultConfig.timeoutSeconds).toBe(30);
+      expect(defaultConfig.healthcheckIntervalSeconds).toBe(45);
+      expect(defaultConfig.numRetries).toBe(7);
+      expect(defaultConfig.retryIntervalSeconds).toBe(3);
+      expect(defaultConfig.sendApiKeyAsQueryParam).toBe(true);
+      expect(defaultConfig.additionalHeaders).toEqual({
+        "Custom-Header": "custom-value",
+        "Another-Header": "another-value",
+      });
+    });
   });
 });
