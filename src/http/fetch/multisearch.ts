@@ -1,6 +1,7 @@
 import type { Configuration } from "@/config";
 import type { MultiSearchResultEntry } from "@/multisearch";
 
+import { getConfiguration } from "@/config";
 import { makeRequest } from "@/http/fetch/request";
 import { ARRAY_KEYS } from "@/search";
 
@@ -46,7 +47,7 @@ async function multisearch<const Searches extends readonly object[]>(
   searchParams: {
     searches: [...Searches];
   },
-  config: Configuration,
+  config?: Configuration,
   queryParams?: MultiSearchQueryParams,
 ): Promise<{
   results: { [K in keyof Searches]: MultiSearchResultEntry<Searches[K]> };
@@ -65,7 +66,7 @@ async function multisearch<const Searches extends readonly object[]>(
 
       return await makeRequest({
         endpoint: `/multisearch?${urlParams.toString()}`,
-        config,
+        config: getConfiguration(config),
         method: "POST",
         body: searchParams,
         params: urlParams,
@@ -74,7 +75,7 @@ async function multisearch<const Searches extends readonly object[]>(
 
     return await makeRequest({
       endpoint: "/multi_search",
-      config,
+      config: getConfiguration(config),
       method: "POST",
       body: searchParams,
     });

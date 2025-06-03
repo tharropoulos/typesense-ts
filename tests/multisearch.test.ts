@@ -25,7 +25,6 @@ const _schema_1 = collection(
     name: "multi_search_test_1",
     enable_nested_fields: true,
   },
-  config,
 );
 
 const _schema_2 = collection(
@@ -37,7 +36,6 @@ const _schema_2 = collection(
     name: "multi_search_test_2",
     enable_nested_fields: true,
   },
-  config,
 );
 
 declare module "@/collection/base" {
@@ -51,8 +49,8 @@ beforeAll(async () => {
   if (!isCi) {
     await upAll({ cwd: __dirname, log: true });
   }
-  await _schema_1.create();
-  await _schema_2.create();
+  await _schema_1.create({}, config);
+  await _schema_2.create({}, config);
   const doc1 = await fetch(
     "http://localhost:8108/collections/multi_search_test_1/documents",
     {
