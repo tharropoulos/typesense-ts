@@ -26,6 +26,7 @@ import type {
   TupleIncludes,
 } from "@/lib/utils";
 import type { CheckCollectionOverrides } from "@/override";
+import type { Stopwords } from "@/stopword";
 
 type OperationMode = "off" | "always" | "fallback";
 
@@ -93,7 +94,7 @@ interface QueryParams<
   vector_query?: string;
   preset?: string; //TODO
   voice_query?: string;
-  stopwords?: string[];
+  stopwords?: Stopwords[keyof Stopwords]["id"];
 }
 
 /**
@@ -417,7 +418,6 @@ const ARRAY_KEYS = {
   infix: true,
   prefix: true,
   query_by_weights: true,
-  stopwords: true,
   num_typos: true,
   facet_return_parent: true,
 } as const satisfies Record<NonNullable<ArraySearchParams>, true>;
