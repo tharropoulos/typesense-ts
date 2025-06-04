@@ -444,6 +444,12 @@ type FlattenNestedFields<T extends readonly unknown[]> =
   : [];
 
 /**
+ * Converts a readonly array to a mutable array
+ * @template T - The readonly array to convert
+ */
+type Mutable<T extends readonly unknown[]> = [...T];
+
+/**
  * Processes a nested collection reference and returns properly formatted field names
  * @template ParentCollection - The parent collection name
  * @template NestedRef - The nested reference string (e.g., "comments_include(*)" or "comments_include(content)")
@@ -502,13 +508,13 @@ type BuildWildcardTuple<Collection extends string> =
     ExtractFields<Collections[Collection]> extends (
       infer Fields extends readonly CollectionField[]
     ) ?
-      {
+      Mutable<{
         [K in keyof Fields]: Fields[K] extends (
           { name: infer Name extends string }
         ) ?
           `${Collection}.${Name}`
         : never;
-      }
+      }>
     : never
   : never;
 
