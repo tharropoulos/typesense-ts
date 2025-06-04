@@ -36,7 +36,7 @@ const _search_schema = collection({
 });
 
 declare module "@/collection/base" {
-  interface GlobalCollections {
+  interface Collections {
     search: typeof _search_schema.schema;
   }
 }

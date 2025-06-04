@@ -1,4 +1,4 @@
-import type { GetSchemaFromName, GlobalCollections } from "@/collection";
+import type { Collections, GetSchemaFromName } from "@/collection";
 import type { Configuration } from "@/config";
 import type { ParseFilter } from "@/lexer/filter";
 import type { ParseSort } from "@/lexer/sort";
@@ -10,7 +10,7 @@ interface Query {
 }
 
 type OverrideCreate<
-  CollectionName extends GlobalCollections[keyof GlobalCollections]["name"],
+  CollectionName extends Collections[keyof Collections]["name"],
   Schema extends OmitDefaultSortingField<GetSchemaFromName<CollectionName>>,
   FilterBy extends string,
   SortBy extends string,
@@ -38,7 +38,7 @@ type OverrideCreate<
 
 type Override<
   OverrideName extends string,
-  CollectionName extends GlobalCollections[keyof GlobalCollections]["name"],
+  CollectionName extends Collections[keyof Collections]["name"],
   Schema extends OmitDefaultSortingField<GetSchemaFromName<CollectionName>>,
   FilterBy extends string,
   SortBy extends string,
@@ -54,7 +54,7 @@ type Override<
 
 interface OverrideOperations<
   OverrideName extends string,
-  CollectionName extends GlobalCollections[keyof GlobalCollections]["name"],
+  CollectionName extends Collections[keyof Collections]["name"],
   Schema extends OmitDefaultSortingField<GetSchemaFromName<CollectionName>>,
   FilterBy extends string,
   SortBy extends string,
@@ -85,9 +85,9 @@ interface OverrideOperations<
 }
 
 type CheckCollectionOverrides<T extends string> =
-  T extends GlobalCollections[keyof GlobalCollections]["name"] ?
+  T extends Collections[keyof Collections]["name"] ?
     {
-      [K in keyof GlobalOverrides]: GlobalOverrides[K] extends (
+      [K in keyof Overrides]: Overrides[K] extends (
         { collection: infer CollectionName; rule: { tags: infer Tags } }
       ) ?
         CollectionName extends T ?
@@ -96,16 +96,16 @@ type CheckCollectionOverrides<T extends string> =
           : never
         : `[Error on tags]: No tags found for collection ${T}`
       : never;
-    }[keyof GlobalOverrides]
-  : `[Error on collection name]: ${T} is not registered in GlobalCollections`;
+    }[keyof Overrides]
+  : `[Error on collection name]: ${T} is not registered in Collections`;
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-interface GlobalOverrides {}
+interface Overrides {}
 
 export type {
   OverrideCreate,
   OverrideOperations,
-  GlobalOverrides,
+  Overrides,
   CheckCollectionOverrides,
   Override,
 };

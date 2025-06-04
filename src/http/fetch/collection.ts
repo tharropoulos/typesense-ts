@@ -6,12 +6,12 @@ import type {
   CreateOptions as CollectionCreateOptions,
   DeleteOptions as CollectionDeleteOptions,
   CollectionField,
+  Collections,
   DefaultSortingFields,
   EmbeddingField,
   ExtractFields,
   FacetableFieldKeys,
   GetSchemaFromName,
-  GlobalCollections,
   InferNativeType,
 } from "@/collection/base";
 import type { Configuration } from "@/config";
@@ -456,7 +456,7 @@ async function _updateCollection<
 }
 
 async function _search<
-  const Name extends GlobalCollections[keyof GlobalCollections]["name"],
+  const Name extends Collections[keyof Collections]["name"],
   const Schema extends OmitDefaultSortingField<GetSchemaFromName<Name>>,
   const FilterBy extends string,
   const SortBy extends string,
@@ -539,7 +539,7 @@ async function _search<
 }
 
 async function _retrieveCollection<
-  Name extends GlobalCollections[keyof GlobalCollections]["name"],
+  Name extends Collections[keyof Collections]["name"],
 >(
   name: Name,
   config?: Configuration,
@@ -558,7 +558,7 @@ async function _retrieveCollection<
 }
 
 async function _deleteCollection<
-  Name extends GlobalCollections[keyof GlobalCollections]["name"],
+  Name extends Collections[keyof Collections]["name"],
 >(
   name: Name,
   config?: Configuration,

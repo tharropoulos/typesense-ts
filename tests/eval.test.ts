@@ -37,7 +37,7 @@ const _postsSchema = collection({
 });
 
 declare module "@/collection/base" {
-  interface GlobalCollections {
+  interface Collections {
     users: typeof _usersSchema;
     posts: typeof _postsSchema;
   }

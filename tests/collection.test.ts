@@ -48,7 +48,7 @@ const testSchema = collection({
 });
 
 declare module "@/collection/base" {
-  interface GlobalCollections {
+  interface Collections {
     test: typeof testSchema.schema;
   }
 }

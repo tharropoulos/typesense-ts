@@ -1,4 +1,4 @@
-import type { GetSchemaFromName, GlobalCollections } from "@/collection";
+import type { Collections, GetSchemaFromName } from "@/collection";
 import type { Configuration } from "@/config";
 import type { OmitDefaultSortingField } from "@/lib/utils";
 import type { Override, OverrideCreate, OverrideOperations } from "@/override";
@@ -8,8 +8,7 @@ import { makeRequest } from "@/http/fetch/request";
 
 export function override<
   const OverrideName extends string,
-  const CollectionName extends
-    GlobalCollections[keyof GlobalCollections]["name"],
+  const CollectionName extends Collections[keyof Collections]["name"],
   const Schema extends OmitDefaultSortingField<
     GetSchemaFromName<CollectionName>
   >,

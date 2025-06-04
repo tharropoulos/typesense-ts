@@ -1,7 +1,8 @@
+import type { CheckCollectionOverrides } from "@/override";
+
 import { setDefaultConfiguration } from "@/config";
 import { collection } from "@/http/fetch/collection";
 import { override } from "@/http/fetch/override";
-import type { CheckCollectionOverrides } from "@/override";
 import { upAll } from "docker-compose";
 import {
   afterAll,
@@ -48,13 +49,13 @@ const taggedOverride = override("tagged_override", {
 });
 
 declare module "@/collection" {
-  interface GlobalCollections {
+  interface Collections {
     overrideCollection: typeof overrideCollection.schema;
   }
 }
 
 declare module "@/override" {
-  interface GlobalOverrides {
+  interface Overrides {
     testOverride: typeof testOverride.override;
     taggedOverride: typeof taggedOverride.override;
   }
@@ -126,7 +127,7 @@ describe("overrides", () => {
     it("should error for non-existing collection", () => {
       expectTypeOf<
         CheckCollectionOverrides<"non-existing-collection">
-      >().toEqualTypeOf<"[Error on collection name]: non-existing-collection is not registered in GlobalCollections">();
+      >().toEqualTypeOf<"[Error on collection name]: non-existing-collection is not registered in Collections">();
     });
 
     it("should error for non-existing collection", () => {

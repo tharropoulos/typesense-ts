@@ -804,16 +804,16 @@ type IsFieldReferenced<
   CurrentCollection extends string,
   CurrentField extends string,
 > = {
-  [CollectionName in keyof GlobalCollections]: {
-    [FieldName in keyof GlobalCollections[CollectionName]["fields"]]: GlobalCollections[CollectionName]["fields"][FieldName] extends (
+  [CollectionName in keyof Collections]: {
+    [FieldName in keyof Collections[CollectionName]["fields"]]: Collections[CollectionName]["fields"][FieldName] extends (
       {
         reference: `${CurrentCollection}.${CurrentField}`;
       }
     ) ?
       CollectionName
     : never;
-  }[keyof GlobalCollections[CollectionName]["fields"]];
-}[keyof GlobalCollections];
+  }[keyof Collections[CollectionName]["fields"]];
+}[keyof Collections];
 
 /**
  * A type that checks if a collection has fields that are referenced by another collection.
@@ -834,9 +834,9 @@ type HasReferencedFields<
  * A type that returns all the collections that have fields that are referenced by another collection.
  */
 type CheckReferences = {
-  [CollectionName in keyof GlobalCollections]: HasReferencedFields<
+  [CollectionName in keyof Collections]: HasReferencedFields<
     CollectionName & string,
-    GlobalCollections[CollectionName]["fields"]
+    Collections[CollectionName]["fields"]
   >;
 };
 
@@ -855,12 +855,11 @@ type FieldTypeMap<
   >["type"];
 };
 
-type GetSchemaFromName<
-  T extends GlobalCollections[keyof GlobalCollections]["name"],
-> = Extract<GlobalCollections[keyof GlobalCollections], { name: T }>;
+type GetSchemaFromName<T extends Collections[keyof Collections]["name"]> =
+  Extract<Collections[keyof Collections], { name: T }>;
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-interface GlobalCollections {}
+interface Collections {}
 
 export type {
   CheckReferences,
@@ -878,7 +877,7 @@ export type {
   ChildFields,
   ObjectFields,
   FindBreakingPoint,
-  GlobalCollections,
+  Collections,
   InferNativeType,
   InfixableFieldKeys,
   SortableFields,

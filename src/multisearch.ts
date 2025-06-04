@@ -1,8 +1,8 @@
 import type {
   ChildFields,
   CollectionField,
+  Collections,
   GetSchemaFromName,
-  GlobalCollections,
 } from "@/collection/base";
 import type { OmitDefaultSortingField } from "@/lib/utils";
 import type {
@@ -35,7 +35,7 @@ import type {
  * @template EnableV1Highlights - Whether to use v1 highlighting (default: true)
  */
 type MultiSearchParamsEntry<
-  Name extends GlobalCollections[keyof GlobalCollections]["name"],
+  Name extends Collections[keyof Collections]["name"],
   Schema extends OmitDefaultSortingField<GetSchemaFromName<Name>>,
   FilterBy extends string,
   SortBy extends string,
@@ -196,7 +196,7 @@ type MultiSearchResultEntry<T> =
  * @returns A type-safe multi-search entry
  */
 function multisearchEntry<
-  const Name extends GlobalCollections[keyof GlobalCollections]["name"],
+  const Name extends Collections[keyof Collections]["name"],
   const Schema extends OmitDefaultSortingField<GetSchemaFromName<Name>>,
   const FilterBy extends string,
   const SortBy extends string,

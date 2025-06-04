@@ -1,6 +1,5 @@
-import type { CounterFields, GlobalCollections } from "@/collection/base";
-
-import type { GetCollectionName, GlobalAliases } from "@/alias";
+import type { Aliases, GetCollectionName } from "@/alias";
+import type { Collections, CounterFields } from "@/collection/base";
 
 /**
  * Helper type to check if an array of objects has unique 'name' properties
@@ -105,8 +104,8 @@ interface PopularQueriesRule<
 }
 
 type CollectionNameToKey = {
-  [K in keyof GlobalCollections]: GlobalCollections[K]["name"] extends string ?
-    GlobalCollections[K]["name"]
+  [K in keyof Collections]: Collections[K]["name"] extends string ?
+    Collections[K]["name"]
   : never;
 };
 
@@ -140,19 +139,19 @@ interface NoHitsQueryRule<
 }
 
 type Destinations =
-  | GlobalCollections[keyof GlobalCollections]["name"]
-  | GlobalAliases[keyof GlobalAliases]["name"];
+  | Collections[keyof Collections]["name"]
+  | Aliases[keyof Aliases]["name"];
 
 type GetCounterField<
   Destination extends
-    | GlobalCollections[keyof GlobalCollections]["name"]
-    | GlobalAliases[keyof GlobalAliases]["name"],
+    | Collections[keyof Collections]["name"]
+    | Aliases[keyof Aliases]["name"],
 > =
-  Destination extends GlobalCollections[keyof GlobalCollections]["name"] ?
-    CounterFields<GlobalCollections[KeyFromName<Destination>]["fields"]>
-  : Destination extends GlobalAliases[keyof GlobalAliases]["name"] ?
+  Destination extends Collections[keyof Collections]["name"] ?
+    CounterFields<Collections[KeyFromName<Destination>]["fields"]>
+  : Destination extends Aliases[keyof Aliases]["name"] ?
     CounterFields<
-      GlobalCollections[KeyFromName<GetCollectionName<Destination>>]["fields"]
+      Collections[KeyFromName<GetCollectionName<Destination>>]["fields"]
     >
   : never;
 
@@ -199,10 +198,10 @@ interface LogRule<
 }
 
 type ExtractRuleTypes<
-  Destination extends GlobalCollections[keyof GlobalCollections]["name"],
+  Destination extends Collections[keyof Collections]["name"],
 > =
   keyof GlobalAnalyticRules extends never ?
-    GlobalCollections[keyof GlobalCollections]["name"]
+    Collections[keyof Collections]["name"]
   : GlobalAnalyticRules[keyof GlobalAnalyticRules] extends infer Rule ?
     Rule extends { params: { destination: { collection: Destination } } } ?
       Rule
@@ -210,7 +209,7 @@ type ExtractRuleTypes<
   : never;
 
 type DestinationRuleTypesMap = {
-  [Destination in GlobalCollections[keyof GlobalCollections]["name"]]: keyof GlobalAnalyticRules extends (
+  [Destination in Collections[keyof Collections]["name"]]: keyof GlobalAnalyticRules extends (
     never
   ) ?
     never
@@ -225,7 +224,7 @@ type IsNotMember<T, U> = T extends U ? false : true;
 
 type _AvailableDestinations<RType extends RuleTypes> =
   keyof GlobalAnalyticRules extends never ?
-    GlobalCollections[keyof GlobalCollections]["name"]
+    Collections[keyof Collections]["name"]
   : {
       [K in keyof DestinationRuleTypesMap]: DestinationRuleTypesMap[K] extends (
         never

@@ -2,8 +2,8 @@ import type {
   CheckReferences,
   Collection,
   CollectionField,
+  Collections,
   ExtractFields,
-  GlobalCollections,
 } from "@/collection/base";
 import type { OmitDefaultSortingField } from "@/lib/utils";
 
@@ -209,11 +209,11 @@ type ValidateIncludeReference<
   Fields extends string[] | "*",
 > =
   Schema["name"] extends keyof CheckReferences ?
-    TargetCollection extends keyof GlobalCollections ?
+    TargetCollection extends keyof Collections ?
       TargetCollection extends CheckReferences[Schema["name"]] ?
         Fields extends "*" ? true
         : Fields extends string[] ?
-          ValidateFields<GlobalCollections[TargetCollection], Fields>
+          ValidateFields<Collections[TargetCollection], Fields>
         : false
       : `Collection '${TargetCollection}' is not referenced by '${Schema["name"]}'`
     : `Collection '${TargetCollection}' is not registered`
@@ -453,8 +453,8 @@ type ProcessNestedReference<
   NestedRef extends string,
 > =
   NestedRef extends `${infer NestedCollection}(*)` ?
-    NestedCollection extends keyof GlobalCollections ?
-      ExtractFields<GlobalCollections[NestedCollection]> extends (
+    NestedCollection extends keyof Collections ?
+      ExtractFields<Collections[NestedCollection]> extends (
         infer Fields extends readonly CollectionField[]
       ) ?
         {
@@ -468,7 +468,7 @@ type ProcessNestedReference<
     : never
   : NestedRef extends `${infer NestedCollection}(${infer FieldList})` ?
     ParseFieldList<FieldList> extends infer ParsedFields extends string[] ?
-      NestedCollection extends keyof GlobalCollections ?
+      NestedCollection extends keyof Collections ?
         BuildNestedFieldTuple<
           `${ParentCollection}.${NestedCollection}`,
           ParsedFields
@@ -498,8 +498,8 @@ type BuildNestedFieldTuple<
  * @template Collection - The target collection name
  */
 type BuildWildcardTuple<Collection extends string> =
-  Collection extends keyof GlobalCollections ?
-    ExtractFields<GlobalCollections[Collection]> extends (
+  Collection extends keyof Collections ?
+    ExtractFields<Collections[Collection]> extends (
       infer Fields extends readonly CollectionField[]
     ) ?
       {

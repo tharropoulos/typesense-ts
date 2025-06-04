@@ -32,13 +32,13 @@ const aliasCounter = collection({
 });
 
 declare module "@/collection/base" {
-  interface GlobalCollections {
+  interface Collections {
     aliasCounter: typeof aliasCounter;
     aliasCollection: typeof aliasCollection;
   }
 }
 declare module "@/alias" {
-  interface GlobalAliases {
+  interface Aliases {
     testAlias: typeof testAlias.alias;
   }
 }

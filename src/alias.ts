@@ -1,4 +1,4 @@
-import type { GlobalCollections } from "@/collection/base";
+import type { Collections } from "@/collection/base";
 import type { Configuration } from "@/config";
 
 /**
@@ -8,7 +8,7 @@ import type { Configuration } from "@/config";
  */
 interface Alias<
   Name extends string,
-  CollectionName extends GlobalCollections[keyof GlobalCollections]["name"],
+  CollectionName extends Collections[keyof Collections]["name"],
 > {
   collection_name: CollectionName;
   name: Name;
@@ -23,11 +23,11 @@ interface BaseAlias {
  * @template N - Alias name
  * @returns Collection name
  */
-type GetCollectionName<N extends GlobalAliases[keyof GlobalAliases]["name"]> = {
-  [K in keyof GlobalAliases]: GlobalAliases[K]["name"] extends N ?
-    GlobalAliases[K]["collection_name"]
+type GetCollectionName<N extends Aliases[keyof Aliases]["name"]> = {
+  [K in keyof Aliases]: Aliases[K]["name"] extends N ?
+    Aliases[K]["collection_name"]
   : never;
-}[keyof GlobalAliases];
+}[keyof Aliases];
 
 /**
  * Helper function to define an alias
@@ -36,15 +36,14 @@ type GetCollectionName<N extends GlobalAliases[keyof GlobalAliases]["name"]> = {
  */
 function alias<
   const Name extends string,
-  const CollectionName extends
-    GlobalCollections[keyof GlobalCollections]["name"],
+  const CollectionName extends Collections[keyof Collections]["name"],
 >(alias: Alias<Name, CollectionName>) {
   return alias;
 }
 
 export interface AliasOperations<
   Name extends string,
-  CollectionName extends GlobalCollections[keyof GlobalCollections]["name"],
+  CollectionName extends Collections[keyof Collections]["name"],
 > {
   readonly alias: Alias<Name, CollectionName>;
   retrieve(config?: Configuration): Promise<Alias<Name, CollectionName>>;
@@ -53,8 +52,8 @@ export interface AliasOperations<
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-interface GlobalAliases {}
+interface Aliases {}
 
-export type { Alias, GlobalAliases, GetCollectionName, BaseAlias };
+export type { Alias, Aliases, GetCollectionName, BaseAlias };
 
 export { alias };

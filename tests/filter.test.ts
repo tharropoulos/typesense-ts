@@ -70,7 +70,7 @@ const _unregisteredSchema = collection({
 });
 
 declare module "@/collection/base" {
-  interface GlobalCollections {
+  interface Collections {
     posts: typeof _postsSchema;
     comments: typeof _commentSchema;
   }

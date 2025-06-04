@@ -1,5 +1,5 @@
-import type { Alias, AliasOperations, BaseAlias, GlobalAliases } from "@/alias";
-import type { GlobalCollections } from "@/collection/base";
+import type { Alias, Aliases, AliasOperations, BaseAlias } from "@/alias";
+import type { Collections } from "@/collection/base";
 import type { Configuration } from "@/config";
 
 import { getConfiguration } from "@/config";
@@ -7,8 +7,7 @@ import { makeRequest } from "@/http/fetch/request";
 
 async function _upsertAlias<
   const Name extends string,
-  const CollectionName extends
-    GlobalCollections[keyof GlobalCollections]["name"],
+  const CollectionName extends Collections[keyof Collections]["name"],
 >(
   alias: Alias<Name, CollectionName>,
   config?: Configuration,
@@ -22,9 +21,9 @@ async function _upsertAlias<
 }
 
 async function _retrieveAlias<
-  const Name extends GlobalAliases[keyof GlobalAliases]["name"],
+  const Name extends Aliases[keyof Aliases]["name"],
   const CollectionName extends
-    GlobalCollections[keyof GlobalCollections]["name"] = GlobalCollections[keyof GlobalCollections]["name"],
+    Collections[keyof Collections]["name"] = Collections[keyof Collections]["name"],
 >(name: Name, config?: Configuration): Promise<Alias<Name, CollectionName>> {
   return await makeRequest({
     endpoint: `/aliases/${encodeURIComponent(name)}`,
@@ -44,9 +43,9 @@ async function retrieveAllAliases(
 }
 
 async function _deleteAlias<
-  const Name extends GlobalAliases[keyof GlobalAliases]["name"],
+  const Name extends Aliases[keyof Aliases]["name"],
   const CollectionName extends
-    GlobalCollections[keyof GlobalCollections]["name"] = GlobalCollections[keyof GlobalCollections]["name"],
+    Collections[keyof Collections]["name"] = Collections[keyof Collections]["name"],
 >(name: Name, config?: Configuration): Promise<Alias<Name, CollectionName>> {
   return makeRequest({
     endpoint: `/aliases/${encodeURIComponent(name)}`,
@@ -57,8 +56,7 @@ async function _deleteAlias<
 
 function alias<
   const Name extends string,
-  const CollectionName extends
-    GlobalCollections[keyof GlobalCollections]["name"],
+  const CollectionName extends Collections[keyof Collections]["name"],
 >(alias: Alias<Name, CollectionName>): AliasOperations<Name, CollectionName> {
   return {
     alias,

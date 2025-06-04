@@ -12,34 +12,30 @@ const config = configure({
   nodes: [{ host: "localhost", port: 8108, protocol: "http" }],
 });
 
-const _schema_1 = collection(
-  {
-    fields: [
-      { name: "foo", type: "string" },
-      { name: "bar", type: "int32" },
-      { name: "baz", type: "object" },
-      { name: "baz.qux", type: "string", facet: true },
-      { name: "quux", type: "string", infix: true },
-      { name: "quuz", type: "string", index: false },
-    ],
-    name: "multi_search_test_1",
-    enable_nested_fields: true,
-  },
-);
+const _schema_1 = collection({
+  fields: [
+    { name: "foo", type: "string" },
+    { name: "bar", type: "int32" },
+    { name: "baz", type: "object" },
+    { name: "baz.qux", type: "string", facet: true },
+    { name: "quux", type: "string", infix: true },
+    { name: "quuz", type: "string", index: false },
+  ],
+  name: "multi_search_test_1",
+  enable_nested_fields: true,
+});
 
-const _schema_2 = collection(
-  {
-    fields: [
-      { name: "foo", type: "string" },
-      { name: "bar", type: "int32" },
-    ],
-    name: "multi_search_test_2",
-    enable_nested_fields: true,
-  },
-);
+const _schema_2 = collection({
+  fields: [
+    { name: "foo", type: "string" },
+    { name: "bar", type: "int32" },
+  ],
+  name: "multi_search_test_2",
+  enable_nested_fields: true,
+});
 
 declare module "@/collection/base" {
-  interface GlobalCollections {
+  interface Collections {
     multi_schema_1: typeof _schema_1.schema;
     multi_schema_2: typeof _schema_2.schema;
   }

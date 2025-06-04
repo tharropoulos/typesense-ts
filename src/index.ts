@@ -11,5 +11,5 @@ export {
 } from "./config";
 
 export type * from "./config";
-export type { GlobalCollections } from "./collection";
-export type { GlobalAliases } from "./alias";
+export type { Collections } from "./collection";
+export type { Aliases } from "./alias";

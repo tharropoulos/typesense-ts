@@ -57,7 +57,7 @@ const counterRule = analyticsRule({
 });
 
 declare module "@/collection/base" {
-  interface GlobalCollections {
+  interface Collections {
     eventSource: typeof sourceCollection;
     eventCounter: typeof counterCollection;
   }

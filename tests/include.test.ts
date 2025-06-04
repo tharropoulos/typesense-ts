@@ -100,7 +100,7 @@ const _unregisteredSchema = collection({
 });
 
 declare module "@/collection/base" {
-  interface GlobalCollections {
+  interface Collections {
     test_collection_include: typeof _testSchema;
     posts_include: typeof _postsSchema;
     authors_include: typeof _authorSchema;

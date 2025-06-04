@@ -2,10 +2,10 @@ import type {
   CheckReferences,
   Collection,
   CollectionField,
+  Collections,
   ExtractFields,
   FieldType,
   FieldTypeMap,
-  GlobalCollections,
 } from "@/collection/base";
 import type {
   Bang,
@@ -442,11 +442,11 @@ type ExtractNestedJoins<
   Collection extends string,
   Acc extends JoinInfo[] = [],
 > =
-  Collection extends keyof GlobalCollections ?
-    Tokenizer<Clause, GlobalCollections[Collection]> extends (
+  Collection extends keyof Collections ?
+    Tokenizer<Clause, Collections[Collection]> extends (
       infer ClauseTokens extends Token[]
     ) ?
-      ExtractJoins<ClauseTokens, GlobalCollections[Collection], Acc>
+      ExtractJoins<ClauseTokens, Collections[Collection], Acc>
     : Acc
   : Acc;
 
@@ -465,14 +465,12 @@ type IsValidJoin<
   TNext extends Token[],
 > =
   Schema["name"] extends keyof CheckReferences ?
-    JoinedCollectionName extends keyof GlobalCollections ?
+    JoinedCollectionName extends keyof Collections ?
       JoinedCollectionName extends CheckReferences[Schema["name"]] ?
-        Parse<JoinClause, GlobalCollections[JoinedCollectionName]> extends (
-          string
-        ) ?
+        Parse<JoinClause, Collections[JoinedCollectionName]> extends string ?
           `[Error on filter for joined collection \`${JoinedCollectionName}\`]: ${Parse<
             JoinClause,
-            GlobalCollections[JoinedCollectionName]
+            Collections[JoinedCollectionName]
           >}`
         : TNext[0] extends LOr | LAnd ? true
         : IsEmpty<TNext> extends true ? true

@@ -83,7 +83,7 @@ declare module "@/analytics/rules" {
 }
 
 declare module "@/collection/base" {
-  interface GlobalCollections {
+  interface Collections {
     source: typeof sourceCollection;
     counter: typeof counterCollection;
   }
