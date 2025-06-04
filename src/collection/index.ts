@@ -8,6 +8,7 @@ import type {
   DefaultSortingFields,
   ExtractFields,
   FacetableFieldKeys,
+  InferNativeType,
 } from "@/collection/base";
 import type { Configuration } from "@/config";
 import type { DocumentOperations } from "@/document";
@@ -40,6 +41,12 @@ export interface CollectionOperations<
    * The collection schema
    */
   readonly schema: Schema;
+
+  readonly infer: InferNativeType<
+    Schema["fields"] extends CollectionField<string, string>[] ?
+      Schema["fields"]
+    : never
+  >;
 
   /**
    * The document operations for the collection
