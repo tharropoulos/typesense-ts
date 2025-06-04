@@ -36,11 +36,11 @@ importers:
         specifier: ^8.5.0
         version: 8.5.0(postcss@8.4.49)(typescript@5.8.3)(yaml@2.6.1)
       typescript:
-        specifier: ^5.7.2
-        version: 5.7.2
+        specifier: ^5.7.3
+        version: 5.8.3
       typescript-eslint:
         specifier: ^8.33.1
-        version: 8.33.1(eslint@9.28.0)(typescript@5.7.2)
+        version: 8.33.1(eslint@9.28.0)(typescript@5.8.3)
       vitest:
         specifier: ^3.2.1
         version: 3.2.1(@types/node@22.15.29)
