@@ -4,6 +4,7 @@ export { collection, retrieveAllCollections } from "./http/fetch/collection";
 export { alias, retrieveAllAliases } from "./http/fetch/alias";
 export { validateCollectionUpdate } from "./collection";
 export { override, retrieveAllOverrides } from "./http/fetch/override";
+export { stopword, retrieveAllStopwords } from "./http/fetch/stopword";
 export {
   configure,
   setDefaultConfiguration,
@@ -15,3 +16,4 @@ export type * from "./config";
 export type { Collections } from "./collection";
 export type { Aliases } from "./alias";
 export type { Overrides } from "./override";
+export type { Stopwords } from "./stopword";
