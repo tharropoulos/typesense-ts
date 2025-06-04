@@ -1,6 +1,6 @@
 {
   "name": "typesense-ts",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "packageManager": "pnpm@9.12.3",
   "description": "An unofficial Typesense client for Node.js written in TypeScript, designed to be fully typesafe",
   "type": "module",
@@ -24,7 +24,8 @@
     "type-check": "tsc -p tsconfig.json --generateTrace ./buildtrace --incremental false",
     "lint": "eslint ",
     "analyze": "analyze-trace ./buildtrace",
-    "prepublishOnly": "pnpm run build"
+    "prepublishOnly": "pnpm run build",
+    "release": "release-it"
   },
   "devDependencies": {
     "@eslint/js": "^9.28.0",
@@ -35,10 +36,17 @@
     "docker-compose": "^1.1.0",
     "eslint": "^9.28.0",
     "prettier": "^3.5.3",
+    "release-it": "^19.0.3",
     "tsup": "^8.5.0",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.33.1",
     "vitest": "^3.2.1",
     "vitest-fetch-mock": "^0.4.2"
+  },
+  "release-it": {
+    "$schema": "https://unpkg.com/release-it/schema/release-it.json",
+    "github": {
+      "release": true
+    }
   }
 }
