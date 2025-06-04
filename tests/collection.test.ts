@@ -1442,9 +1442,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<
-        InferNativeType<typeof _schema.schema.fields>
-      >().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
         field: string;
         id: string;
       }>();
@@ -1460,9 +1458,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<
-        InferNativeType<typeof _schema.schema.fields>
-      >().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
         field: string[];
         id: string;
       }>();
@@ -1478,9 +1474,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<
-        InferNativeType<typeof _schema.schema.fields>
-      >().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
         field: number;
         id: string;
       }>();
@@ -1496,9 +1490,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<
-        InferNativeType<typeof _schema.schema.fields>
-      >().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
         field: number[];
         id: string;
       }>();
@@ -1514,9 +1506,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<
-        InferNativeType<typeof _schema.schema.fields>
-      >().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
         field: number;
         id: string;
       }>();
@@ -1532,9 +1522,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<
-        InferNativeType<typeof _schema.schema.fields>
-      >().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
         field: number[];
         id: string;
       }>();
@@ -1550,9 +1538,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<
-        InferNativeType<typeof _schema.schema.fields>
-      >().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
         field: number;
         id: string;
       }>();
@@ -1568,9 +1554,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<
-        InferNativeType<typeof _schema.schema.fields>
-      >().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
         field: number[];
         id: string;
       }>();
@@ -1586,9 +1570,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<
-        InferNativeType<typeof _schema.schema.fields>
-      >().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
         field: boolean;
         id: string;
       }>();
@@ -1604,9 +1586,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<
-        InferNativeType<typeof _schema.schema.fields>
-      >().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
         field: boolean[];
         id: string;
       }>();
@@ -1622,9 +1602,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<
-        InferNativeType<typeof _schema.schema.fields>
-      >().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
         field: [number, number];
         id: string;
       }>();
@@ -1640,9 +1618,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<
-        InferNativeType<typeof _schema.schema.fields>
-      >().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
         field: [number, number][];
         id: string;
       }>();
@@ -1658,9 +1634,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<
-        InferNativeType<typeof _schema.schema.fields>
-      >().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
         field: unknown;
         id: string;
       }>();
@@ -1676,9 +1650,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<
-        InferNativeType<typeof _schema.schema.fields>
-      >().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
         field: string;
         id: string;
       }>();
@@ -1694,9 +1666,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<
-        InferNativeType<typeof _schema.schema.fields>
-      >().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
         field: string;
         id: string;
       }>();
@@ -1713,9 +1683,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<
-        InferNativeType<typeof _schema.schema.fields>
-      >().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
         field: string | undefined;
         id: string;
       }>();
@@ -1732,9 +1700,7 @@ describe("collection tests", () => {
         enable_nested_fields: true,
       });
 
-      expectTypeOf<
-        InferNativeType<typeof _schema.schema.fields>
-      >().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
         field: DocumentSchema;
         id: string;
       }>();
@@ -1763,9 +1729,7 @@ describe("collection tests", () => {
         enable_nested_fields: true,
       });
 
-      expectTypeOf<
-        InferNativeType<typeof _schema.schema.fields>
-      >().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
         field: {
           child: string;
           child2: {
@@ -1795,9 +1759,7 @@ describe("collection tests", () => {
         enable_nested_fields: true,
       });
 
-      expectTypeOf<
-        InferNativeType<typeof _schema.schema.fields>
-      >().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
         field: {
           child: string;
         };
@@ -1829,9 +1791,7 @@ describe("collection tests", () => {
         enable_nested_fields: true,
       });
 
-      expectTypeOf<
-        InferNativeType<typeof _schema.schema.fields>
-      >().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
         field: {
           child: string;
           child2: {

@@ -288,6 +288,11 @@ function collection<
       },
     },
     schema: collectionSchema,
+    infer: collectionSchema.fields as InferNativeType<
+      typeof collectionSchema.fields extends CollectionField<string, string>[]
+        ? typeof collectionSchema.fields
+        : never
+    >,
 
     async create(options?: CollectionCreateOptions, config?: Configuration) {
       const params = new URLSearchParams(options);
