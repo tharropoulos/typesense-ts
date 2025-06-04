@@ -17,3 +17,4 @@ export type { Collections, InferNativeType } from "./collection";
 export type { Aliases } from "./alias";
 export type { Overrides } from "./override";
 export type { Stopwords } from "./stopword";
+export type { SearchResponse } from "./search";
