@@ -94,7 +94,7 @@ interface QueryParams<
   vector_query?: string;
   preset?: string; //TODO
   voice_query?: string;
-  stopwords?: Stopwords[keyof Stopwords]["id"];
+  stopwords?: Stopwords[keyof Stopwords]["id"][];
 }
 
 /**
@@ -420,6 +420,7 @@ const ARRAY_KEYS = {
   query_by_weights: true,
   num_typos: true,
   facet_return_parent: true,
+  stopwords: true
 } as const satisfies Record<NonNullable<ArraySearchParams>, true>;
 
 interface BaseHighlightV1<T extends CollectionField> {

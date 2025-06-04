@@ -294,7 +294,7 @@ describe("stopwords", () => {
         const resWithStopwords = await stopwordCollection.search({
           q: "the",
           query_by: ["title", "content"],
-          stopwords: "basic_stopword",
+          stopwords: ["basic_stopword"],
         });
 
         // Both should return results, but stopwords may affect ranking
