@@ -3,12 +3,28 @@
   "version": "0.1.0",
   "packageManager": "pnpm@9.12.3",
   "description": "An unofficial Typesense client for Node.js written in TypeScript, designed to be fully typesafe",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
     "test": "vitest --typecheck --coverage",
     "format": "prettier --check . --ignore-path .gitignore",
     "type-check": "tsc -p tsconfig.json --generateTrace ./buildtrace --incremental false",
     "lint": "eslint ",
-    "analyze": "analyze-trace ./buildtrace"
+    "analyze": "analyze-trace ./buildtrace",
+    "prepublishOnly": "pnpm run build"
   },
   "devDependencies": {
     "@eslint/js": "^9.28.0",
