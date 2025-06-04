@@ -12,7 +12,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.28.0",
-    "@ianvs/prettier-plugin-sort-imports": "^4.4.0",
+    "@ianvs/prettier-plugin-sort-imports": "^4.4.2",
     "@types/eslint__js": "^9.14.0",
     "@types/node": "^22.15.29",
     "@typescript/analyze-trace": "^0.10.1",
