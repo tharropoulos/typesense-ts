@@ -1,6 +1,6 @@
 {
   "name": "typesense-ts",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "packageManager": "pnpm@9.12.3",
   "description": "An unofficial Typesense client for Node.js written in TypeScript, designed to be fully typesafe",
   "type": "module",
