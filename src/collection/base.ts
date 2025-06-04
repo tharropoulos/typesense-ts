@@ -149,8 +149,8 @@ type SortableFields<T extends CollectionField[]> = {
   [K in keyof T]: T[K] extends CollectionField ?
     T[K]["sort"] extends true ? T[K]["name"]
     : T[K]["type"] extends SortableTypes ?
-      T[K]["sort"] extends false ?
-        never
+      T[K]["index"] extends false ? never
+      : T[K]["sort"] extends false ? never
       : T[K]["name"]
     : never
   : never;
