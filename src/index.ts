@@ -13,7 +13,7 @@ export {
 } from "./config";
 
 export type * from "./config";
-export type { Collections } from "./collection";
+export type { Collections, InferNativeType } from "./collection";
 export type { Aliases } from "./alias";
 export type { Overrides } from "./override";
 export type { Stopwords } from "./stopword";
