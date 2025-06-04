@@ -15,6 +15,7 @@
     "moduleDetection": "force",
     "jsx": "preserve",
     "incremental": true,
+    "tsBuildInfoFile": ".tsbuildinfo",
     "noUncheckedIndexedAccess": true,
     "baseUrl": ".",
     "paths": {
