@@ -1,14 +1,14 @@
 import type { FieldType, FieldTypeMap } from "@/collection/base";
 import type {
+  CheckFilterSquareBrackets,
   CheckParentheses,
-  CheckSquareBrackets,
   FilterTokenizer,
-  IsNextTokenValid,
-  IsValidArray,
+  IsNextFilterTokenValid,
+  IsValidFilterArray,
   ParseFilter,
   ParseWithJoinTracking,
   ReadEscapeToken,
-  ReadToken,
+  ReadFilterToken,
   TypeToOperatorMap,
   ValidNextTokenMap,
 } from "@/lexer/filter";
@@ -78,99 +78,115 @@ declare module "@/collection/base" {
 
 describe("ReadToken tests", () => {
   it("should read an left parenthesis", () => {
-    expectTypeOf<ReadToken<"( age = 20">>().toEqualTypeOf<["(", " age = 20"]>();
+    expectTypeOf<ReadFilterToken<"( age = 20">>().toEqualTypeOf<
+      ["(", " age = 20"]
+    >();
   });
   it("should read an right parenthesis", () => {
-    expectTypeOf<ReadToken<") age = 20">>().toEqualTypeOf<[")", " age = 20"]>();
+    expectTypeOf<ReadFilterToken<") age = 20">>().toEqualTypeOf<
+      [")", " age = 20"]
+    >();
   });
   it("should read an left square bracket", () => {
-    expectTypeOf<ReadToken<":[ age = 20">>().toEqualTypeOf<
+    expectTypeOf<ReadFilterToken<":[ age = 20">>().toEqualTypeOf<
       [":[", " age = 20"]
     >();
   });
   it("should read an right square bracket", () => {
-    expectTypeOf<ReadToken<"] age = 20">>().toEqualTypeOf<["]", " age = 20"]>();
+    expectTypeOf<ReadFilterToken<"] age = 20">>().toEqualTypeOf<
+      ["]", " age = 20"]
+    >();
   });
   it("should read a greater than operator", () => {
-    expectTypeOf<ReadToken<"> age = 20">>().toEqualTypeOf<[">", " age = 20"]>();
+    expectTypeOf<ReadFilterToken<"> age = 20">>().toEqualTypeOf<
+      [">", " age = 20"]
+    >();
   });
   it("should read a prefixed greater than operator", () => {
-    expectTypeOf<ReadToken<":> age = 20">>().toEqualTypeOf<
+    expectTypeOf<ReadFilterToken<":> age = 20">>().toEqualTypeOf<
       [":>", " age = 20"]
     >();
   });
   it("should read a lesser than operator", () => {
-    expectTypeOf<ReadToken<"< age = 20">>().toEqualTypeOf<["<", " age = 20"]>();
+    expectTypeOf<ReadFilterToken<"< age = 20">>().toEqualTypeOf<
+      ["<", " age = 20"]
+    >();
   });
   it("should read a prefixed lesser than operator", () => {
-    expectTypeOf<ReadToken<":< age = 20">>().toEqualTypeOf<
+    expectTypeOf<ReadFilterToken<":< age = 20">>().toEqualTypeOf<
       [":<", " age = 20"]
     >();
   });
   it("should read a greater than equal operator", () => {
-    expectTypeOf<ReadToken<":>= age = 20">>().toEqualTypeOf<
+    expectTypeOf<ReadFilterToken<":>= age = 20">>().toEqualTypeOf<
       [":>=", " age = 20"]
     >();
   });
   it("should read a lesser than equal operator", () => {
-    expectTypeOf<ReadToken<":<= age = 20">>().toEqualTypeOf<
+    expectTypeOf<ReadFilterToken<":<= age = 20">>().toEqualTypeOf<
       [":<=", " age = 20"]
     >();
   });
   it("should read an equal operator", () => {
-    expectTypeOf<ReadToken<":= age = 20">>().toEqualTypeOf<
+    expectTypeOf<ReadFilterToken<":= age = 20">>().toEqualTypeOf<
       [":=", " age = 20"]
     >();
   });
   it("should read a not equal operator", () => {
-    expectTypeOf<ReadToken<":!= age = 20">>().toEqualTypeOf<
+    expectTypeOf<ReadFilterToken<":!= age = 20">>().toEqualTypeOf<
       [":!=", " age = 20"]
     >();
   });
   it("should read a bang operator", () => {
-    expectTypeOf<ReadToken<":! age = 20">>().toEqualTypeOf<
+    expectTypeOf<ReadFilterToken<":! age = 20">>().toEqualTypeOf<
       [":!", " age = 20"]
     >();
   });
   it("should read a colon operator", () => {
-    expectTypeOf<ReadToken<": age = 20">>().toEqualTypeOf<[":", " age = 20"]>();
+    expectTypeOf<ReadFilterToken<": age = 20">>().toEqualTypeOf<
+      [":", " age = 20"]
+    >();
   });
   it("should read logical AND operator", () => {
-    expectTypeOf<ReadToken<"&& age = 20">>().toEqualTypeOf<
+    expectTypeOf<ReadFilterToken<"&& age = 20">>().toEqualTypeOf<
       ["&&", " age = 20"]
     >();
   });
   it("should read logical OR operator", () => {
-    expectTypeOf<ReadToken<"|| age = 20">>().toEqualTypeOf<
+    expectTypeOf<ReadFilterToken<"|| age = 20">>().toEqualTypeOf<
       ["||", " age = 20"]
     >();
   });
   it("should read a spread operator", () => {
-    expectTypeOf<ReadToken<"... age = 20">>().toEqualTypeOf<
+    expectTypeOf<ReadFilterToken<"... age = 20">>().toEqualTypeOf<
       ["..", ". age = 20"]
     >();
   });
   it("should read a comma operator", () => {
-    expectTypeOf<ReadToken<",. age = 20">>().toEqualTypeOf<
+    expectTypeOf<ReadFilterToken<",. age = 20">>().toEqualTypeOf<
       [",", ". age = 20"]
     >();
   });
   it("should read a reference", () => {
-    expectTypeOf<ReadToken<"$products(id:=1) age = 20">>().toEqualTypeOf<
+    expectTypeOf<ReadFilterToken<"$products(id:=1) age = 20">>().toEqualTypeOf<
       [ReferenceToken<"products", "id:=1">, " age = 20"]
     >();
   });
   it("should read a geo token", () => {
-    expectTypeOf<ReadToken<":(29.38, 27.832384, 2.3 km)">>().toEqualTypeOf<
-      [GeoToken<"29.38, 27.832384, 2.3 km">, ""]
-    >();
+    expectTypeOf<
+      ReadFilterToken<":(29.38, 27.832384, 2.3 km)">
+    >().toEqualTypeOf<[GeoToken<"29.38, 27.832384, 2.3 km">, ""]>();
   });
   it("should not read an illegal token", () => {
-    expectTypeOf<ReadToken<" = age = 20">>().toEqualTypeOf<
+    expectTypeOf<ReadFilterToken<" = age = 20">>().toEqualTypeOf<
       ["", " = age = 20"]
     >();
-    expectTypeOf<ReadToken<"= age = 20">>().toEqualTypeOf<["", "= age = 20"]>();
-    expectTypeOf<ReadToken<"age := 20">>().toEqualTypeOf<["", "age := 20"]>();
+    expectTypeOf<ReadFilterToken<"= age = 20">>().toEqualTypeOf<
+      ["", "= age = 20"]
+    >();
+    expectTypeOf<ReadFilterToken<"age := 20">>().toEqualTypeOf<
+      ["", "age := 20"]
+    >();
   });
 });
 
@@ -251,13 +267,17 @@ describe("IsNextTokenValid type tests", () => {
   describe("Left Parenthesis", () => {
     it("should validate a left parenthesis followed by an identifier", () => {
       expectTypeOf<
-        IsNextTokenValid<"(", typeof _usersSchema, [Ident<"age", "int32">]>
+        IsNextFilterTokenValid<
+          "(",
+          typeof _usersSchema,
+          [Ident<"age", "int32">]
+        >
       >().toEqualTypeOf<true>();
     });
 
     it("should invalidate a left parenthesis followed by a right parenthesis", () => {
       expectTypeOf<
-        IsNextTokenValid<"(", typeof _usersSchema, [")"]>
+        IsNextFilterTokenValid<"(", typeof _usersSchema, [")"]>
       >().toEqualTypeOf<"Invalid token sequence: `(` followed by `)`">();
     });
   });
@@ -265,7 +285,7 @@ describe("IsNextTokenValid type tests", () => {
   describe("Identifier", () => {
     it("should validate an identifier followed by an operator", () => {
       expectTypeOf<
-        IsNextTokenValid<
+        IsNextFilterTokenValid<
           Ident<"location", "string">,
           typeof _usersSchema,
           [GeoToken<string>, ":", LiteralToken<"t">]
@@ -274,7 +294,7 @@ describe("IsNextTokenValid type tests", () => {
     });
     it("should validate a geopoint identifier followed by geo token", () => {
       expectTypeOf<
-        IsNextTokenValid<
+        IsNextFilterTokenValid<
           Ident<"location", "geopoint">,
           typeof _usersSchema,
           [GeoToken<string>]
@@ -283,7 +303,7 @@ describe("IsNextTokenValid type tests", () => {
     });
     it("should invalidate an identifier followed by another identifier", () => {
       expectTypeOf<
-        IsNextTokenValid<
+        IsNextFilterTokenValid<
           Ident<"age", "int32">,
           typeof _usersSchema,
           [Ident<"name", "string">]
@@ -295,13 +315,17 @@ describe("IsNextTokenValid type tests", () => {
   describe("Right Parenthesis", () => {
     it("should validate a right parenthesis followed by a logical AND operator", () => {
       expectTypeOf<
-        IsNextTokenValid<")", typeof _usersSchema, ["&&"]>
+        IsNextFilterTokenValid<")", typeof _usersSchema, ["&&"]>
       >().toEqualTypeOf<true>();
     });
 
     it("should invalidate a right parenthesis followed by an identifier", () => {
       expectTypeOf<
-        IsNextTokenValid<")", typeof _usersSchema, [Ident<"age", "int32">]>
+        IsNextFilterTokenValid<
+          ")",
+          typeof _usersSchema,
+          [Ident<"age", "int32">]
+        >
       >().toEqualTypeOf<"Invalid token sequence: `)` followed by identifier">();
     });
   });
@@ -309,13 +333,13 @@ describe("IsNextTokenValid type tests", () => {
   describe("Operators", () => {
     it("should validate an operator followed by a literal token", () => {
       expectTypeOf<
-        IsNextTokenValid<":", typeof _usersSchema, [LiteralToken<"John">]>
+        IsNextFilterTokenValid<":", typeof _usersSchema, [LiteralToken<"John">]>
       >().toEqualTypeOf<true>();
     });
 
     it("should invalidate an operator followed by another operator", () => {
       expectTypeOf<
-        IsNextTokenValid<":", typeof _usersSchema, [":"]>
+        IsNextFilterTokenValid<":", typeof _usersSchema, [":"]>
       >().toEqualTypeOf<"Invalid token sequence: `:` followed by `:`">();
     });
   });
@@ -323,13 +347,13 @@ describe("IsNextTokenValid type tests", () => {
   describe("Logical Operators", () => {
     it("should validate a logical operator followed by a left parenthesis", () => {
       expectTypeOf<
-        IsNextTokenValid<"&&", typeof _usersSchema, ["("]>
+        IsNextFilterTokenValid<"&&", typeof _usersSchema, ["("]>
       >().toEqualTypeOf<true>();
     });
 
     it("should invalidate a logical operator followed by another logical operator", () => {
       expectTypeOf<
-        IsNextTokenValid<"&&", typeof _usersSchema, ["&&"]>
+        IsNextFilterTokenValid<"&&", typeof _usersSchema, ["&&"]>
       >().toEqualTypeOf<"Invalid token sequence: `&&` followed by `&&`">();
     });
   });
@@ -337,12 +361,12 @@ describe("IsNextTokenValid type tests", () => {
   describe("Literal Tokens", () => {
     it("should validate a literal token followed by a right parenthesis", () => {
       expectTypeOf<
-        IsNextTokenValid<LiteralToken<"John">, typeof _usersSchema, [")"]>
+        IsNextFilterTokenValid<LiteralToken<"John">, typeof _usersSchema, [")"]>
       >().toEqualTypeOf<true>();
     });
     it("should invalidate a literal token followed by an identifier", () => {
       expectTypeOf<
-        IsNextTokenValid<
+        IsNextFilterTokenValid<
           LiteralToken<"John">,
           typeof _usersSchema,
           [Ident<"age", "int32">]
@@ -354,13 +378,13 @@ describe("IsNextTokenValid type tests", () => {
   describe("Integer Tokens", () => {
     it("should validate an integer token followed by a right parenthesis", () => {
       expectTypeOf<
-        IsNextTokenValid<NumToken<"20">, typeof _usersSchema, [")"]>
+        IsNextFilterTokenValid<NumToken<"20">, typeof _usersSchema, [")"]>
       >().toEqualTypeOf<true>();
     });
 
     it("should invalidate an integer token followed by an identifier", () => {
       expectTypeOf<
-        IsNextTokenValid<
+        IsNextFilterTokenValid<
           NumToken<"20">,
           typeof _usersSchema,
           [Ident<"age", "int32">]
@@ -372,7 +396,7 @@ describe("IsNextTokenValid type tests", () => {
   describe("Left Square Bracket", () => {
     it("should validate a left square bracket followed by an integer token", () => {
       expectTypeOf<
-        IsNextTokenValid<
+        IsNextFilterTokenValid<
           Ident<"age", "int32">,
           typeof _usersSchema,
           [":[", NumToken<"20">]
@@ -382,7 +406,7 @@ describe("IsNextTokenValid type tests", () => {
 
     it("should invalidate a left square bracket followed by a right parenthesis", () => {
       expectTypeOf<
-        IsNextTokenValid<":[", typeof _usersSchema, [")"]>
+        IsNextFilterTokenValid<":[", typeof _usersSchema, [")"]>
       >().toEqualTypeOf<"Invalid token sequence: `:[` followed by `)`">();
     });
   });
@@ -390,13 +414,17 @@ describe("IsNextTokenValid type tests", () => {
   describe("Right Square Bracket", () => {
     it("should validate a right square bracket followed by a logical AND operator", () => {
       expectTypeOf<
-        IsNextTokenValid<"]", typeof _usersSchema, ["&&"]>
+        IsNextFilterTokenValid<"]", typeof _usersSchema, ["&&"]>
       >().toEqualTypeOf<true>();
     });
 
     it("should invalidate a right square bracket followed by an identifier", () => {
       expectTypeOf<
-        IsNextTokenValid<"]", typeof _usersSchema, [Ident<"age", "int32">]>
+        IsNextFilterTokenValid<
+          "]",
+          typeof _usersSchema,
+          [Ident<"age", "int32">]
+        >
       >().toEqualTypeOf<"Invalid token sequence: `]` followed by identifier">();
     });
   });
@@ -404,13 +432,13 @@ describe("IsNextTokenValid type tests", () => {
   describe("Comma", () => {
     it("should validate a comma followed by an integer token", () => {
       expectTypeOf<
-        IsNextTokenValid<",", typeof _usersSchema, [NumToken<"20">]>
+        IsNextFilterTokenValid<",", typeof _usersSchema, [NumToken<"20">]>
       >().toEqualTypeOf<true>();
     });
 
     it("should invalidate a comma followed by a right parenthesis", () => {
       expectTypeOf<
-        IsNextTokenValid<",", typeof _usersSchema, [")"]>
+        IsNextFilterTokenValid<",", typeof _usersSchema, [")"]>
       >().toEqualTypeOf<"Invalid token sequence: `,` followed by `)`">();
     });
   });
@@ -418,13 +446,13 @@ describe("IsNextTokenValid type tests", () => {
   describe("Spread", () => {
     it("should validate a spread operator followed by an integer token", () => {
       expectTypeOf<
-        IsNextTokenValid<"..", typeof _usersSchema, [NumToken<"30">]>
+        IsNextFilterTokenValid<"..", typeof _usersSchema, [NumToken<"30">]>
       >().toEqualTypeOf<true>();
     });
 
     it("should invalidate a spread operator followed by a right parenthesis", () => {
       expectTypeOf<
-        IsNextTokenValid<"..", typeof _usersSchema, [")"]>
+        IsNextFilterTokenValid<"..", typeof _usersSchema, [")"]>
       >().toEqualTypeOf<"Invalid token sequence: `..` followed by `)`">();
     });
   });
@@ -432,7 +460,7 @@ describe("IsNextTokenValid type tests", () => {
   describe("Reference", () => {
     it("should invalidate if the current collection isn't registered", () => {
       expectTypeOf<
-        IsNextTokenValid<
+        IsNextFilterTokenValid<
           ReferenceToken<"products", "id:*">,
           typeof _unregisteredSchema,
           []
@@ -442,7 +470,7 @@ describe("IsNextTokenValid type tests", () => {
 
     it("should invalidate if the joining collection isn't registered", () => {
       expectTypeOf<
-        IsNextTokenValid<
+        IsNextFilterTokenValid<
           ReferenceToken<"products", "id:*">,
           typeof _usersSchema,
           []
@@ -452,7 +480,7 @@ describe("IsNextTokenValid type tests", () => {
 
     it("should invalidate if the joining collection isn't referencing the collection", () => {
       expectTypeOf<
-        IsNextTokenValid<
+        IsNextFilterTokenValid<
           ReferenceToken<"comments", "id:*">,
           typeof _usersSchema,
           []
@@ -462,7 +490,7 @@ describe("IsNextTokenValid type tests", () => {
 
     it("should invalidate if the joining collection isn't parsed correctly", () => {
       expectTypeOf<
-        IsNextTokenValid<
+        IsNextFilterTokenValid<
           ReferenceToken<"posts", "(id:*">,
           typeof _usersSchema,
           []
@@ -472,7 +500,7 @@ describe("IsNextTokenValid type tests", () => {
 
     it("should validate if the reference is correct", () => {
       expectTypeOf<
-        IsNextTokenValid<
+        IsNextFilterTokenValid<
           ReferenceToken<"posts", "id:*">,
           typeof _usersSchema,
           []
@@ -482,7 +510,7 @@ describe("IsNextTokenValid type tests", () => {
 
     it("should validate if the nested reference is correct", () => {
       expectTypeOf<
-        IsNextTokenValid<
+        IsNextFilterTokenValid<
           ReferenceToken<"posts", "$comments(post:=1)">,
           typeof _usersSchema,
           []
@@ -608,73 +636,77 @@ describe("CheckParentheses tests", () => {
 
 describe("CheckSquareBrackets tests", () => {
   it("should return true for balanced square brackets", () => {
-    expectTypeOf<CheckSquareBrackets<[":[", "]"]>>().toEqualTypeOf<true>();
     expectTypeOf<
-      CheckSquareBrackets<[":[", "(", ")", "]"]>
+      CheckFilterSquareBrackets<[":[", "]"]>
     >().toEqualTypeOf<true>();
     expectTypeOf<
-      CheckSquareBrackets<[":[", ":[", "]", "]"]>
+      CheckFilterSquareBrackets<[":[", "(", ")", "]"]>
     >().toEqualTypeOf<true>();
     expectTypeOf<
-      CheckSquareBrackets<[":[", ":[", ":[", "]", "]", "]"]>
+      CheckFilterSquareBrackets<[":[", ":[", "]", "]"]>
+    >().toEqualTypeOf<true>();
+    expectTypeOf<
+      CheckFilterSquareBrackets<[":[", ":[", ":[", "]", "]", "]"]>
     >().toEqualTypeOf<true>();
   });
 
   it("should return false for unbalanced square brackets (more opening)", () => {
     expectTypeOf<
-      CheckSquareBrackets<[":[", ":[", "]"]>
+      CheckFilterSquareBrackets<[":[", ":[", "]"]>
     >().toEqualTypeOf<false>();
     expectTypeOf<
-      CheckSquareBrackets<[":[", ":[", ":[", "]", "]"]>
+      CheckFilterSquareBrackets<[":[", ":[", ":[", "]", "]"]>
     >().toEqualTypeOf<false>();
   });
 
   it("should return false for unbalanced square brackets (more closing)", () => {
     expectTypeOf<
-      CheckSquareBrackets<[":[", "]", "]"]>
+      CheckFilterSquareBrackets<[":[", "]", "]"]>
     >().toEqualTypeOf<false>();
     expectTypeOf<
-      CheckSquareBrackets<[":[", ":[", "]", "]", "]"]>
+      CheckFilterSquareBrackets<[":[", ":[", "]", "]", "]"]>
     >().toEqualTypeOf<false>();
   });
 
   it("should return false for unbalanced square brackets with other tokens", () => {
     expectTypeOf<
-      CheckSquareBrackets<[":[", "(", ")"]>
+      CheckFilterSquareBrackets<[":[", "(", ")"]>
     >().toEqualTypeOf<false>();
     expectTypeOf<
-      CheckSquareBrackets<[":[", "(", ")", "]", "]"]>
+      CheckFilterSquareBrackets<[":[", "(", ")", "]", "]"]>
     >().toEqualTypeOf<false>();
   });
 
   it("should return true for balanced square brackets with other tokens", () => {
     expectTypeOf<
-      CheckSquareBrackets<[":[", "(", ")", ":[", "]", "]"]>
+      CheckFilterSquareBrackets<[":[", "(", ")", ":[", "]", "]"]>
     >().toEqualTypeOf<true>();
     expectTypeOf<
-      CheckSquareBrackets<[":[", "(", ")", ":[", ":[", "]", "]", "]"]>
+      CheckFilterSquareBrackets<[":[", "(", ")", ":[", ":[", "]", "]", "]"]>
     >().toEqualTypeOf<true>();
   });
 
   it("should return true for empty token array", () => {
-    expectTypeOf<CheckSquareBrackets<[]>>().toEqualTypeOf<true>();
+    expectTypeOf<CheckFilterSquareBrackets<[]>>().toEqualTypeOf<true>();
   });
 });
 
 describe("IsValidArray tests", () => {
   it("should return true for an empty array", () => {
-    expectTypeOf<IsValidArray<[], typeof _usersSchema>>().toEqualTypeOf<true>();
+    expectTypeOf<
+      IsValidFilterArray<[], typeof _usersSchema>
+    >().toEqualTypeOf<true>();
   });
 
   it("should return false for a single valid token", () => {
     expectTypeOf<
-      IsValidArray<["("], typeof _usersSchema>
+      IsValidFilterArray<["("], typeof _usersSchema>
     >().toEqualTypeOf<"Invalid token sequence: `(` cannot be the only token">();
   });
 
   it("should return true for a sequence of valid tokens", () => {
     expectTypeOf<
-      IsValidArray<
+      IsValidFilterArray<
         [
           "(",
           Ident<"age", "int32">,
@@ -696,7 +728,7 @@ describe("IsValidArray tests", () => {
 
   it("should return true for a sequence of valid tokens with a reference", () => {
     expectTypeOf<
-      IsValidArray<
+      IsValidFilterArray<
         [
           "(",
           Ident<"age", "int32">,
@@ -713,7 +745,7 @@ describe("IsValidArray tests", () => {
 
   it("should return true for a sequence of valid tokens with a nested reference", () => {
     expectTypeOf<
-      IsValidArray<
+      IsValidFilterArray<
         [
           "(",
           Ident<"age", "int32">,
@@ -730,7 +762,7 @@ describe("IsValidArray tests", () => {
 
   it("should return false for a sequence of valid tokens with a nested reference", () => {
     expectTypeOf<
-      IsValidArray<
+      IsValidFilterArray<
         [
           "(",
           Ident<"age", "int32">,
@@ -747,7 +779,7 @@ describe("IsValidArray tests", () => {
 
   it("should return false for a sequence with an invalid token", () => {
     expectTypeOf<
-      IsValidArray<
+      IsValidFilterArray<
         [
           "(",
           Ident<"age", "int32">,
@@ -764,13 +796,13 @@ describe("IsValidArray tests", () => {
 
   it("should return false for a sequence with an invalid starting token", () => {
     expectTypeOf<
-      IsValidArray<[":=", NumToken<"20">, ")"], typeof _usersSchema>
+      IsValidFilterArray<[":=", NumToken<"20">, ")"], typeof _usersSchema>
     >().toEqualTypeOf<"Invalid start token: `:=`">();
   });
 
   it("should return false for a sequence with an invalid transition", () => {
     expectTypeOf<
-      IsValidArray<
+      IsValidFilterArray<
         [
           "(",
           Ident<"age", "int32">,

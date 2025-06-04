@@ -17,10 +17,10 @@ import type {
   SortOrder,
   Whitespace,
 } from "@/lexer/token";
-import type { IsEmpty, ReadString, Tail } from "@/lexer/types";
+import type { IsEmpty, ReadString, TupleTail } from "@/lexer/types";
 import type { OmitDefaultSortingField } from "@/lib/utils";
 
-interface EvalToken<C extends string> {
+interface SortEvalToken<C extends string> {
   type: "eval";
   clause: C;
 }
@@ -31,12 +31,12 @@ interface ConfigToken<K extends string, V extends string> {
   value: V;
 }
 
-type Token =
+type SortToken =
   | Ident<string, FieldType>
   | Colon
   | SortOrder
   | Comma
-  | EvalToken<string>
+  | SortEvalToken<string>
   | ConfigToken<string, string>;
 
 type ExtractBalancedParenthesesAndTrim<
@@ -91,7 +91,7 @@ type ExtractBalancedParenthesesAndTrim<
   : Stack extends [] ? [Acc, ""]
   : ["", ""]; // Unbalanced case
 
-type ReadToken<T extends string> =
+type ReadSortToken<T extends string> =
   T extends `${infer First}${infer Rest}` ?
     First extends ":" ? [Colon, Rest]
     : First extends "," ? [Comma, Rest]
@@ -100,8 +100,8 @@ type ReadToken<T extends string> =
         [infer Clause extends string, infer Remaining]
       ) ?
         Remaining extends `:desc${infer Rest}` ?
-          [EvalToken<Clause & string>, Colon, Desc, Rest]
-        : [EvalToken<Clause & string>, Remaining]
+          [SortEvalToken<Clause & string>, Colon, Desc, Rest]
+        : [SortEvalToken<Clause & string>, Remaining]
       : [T, EOF]
     : T extends `${infer Field}(${infer Key}:${infer Value})${infer Rest}` ?
       [Ident<Field, FieldType>, ConfigToken<Key, Value>, Rest]
@@ -112,40 +112,40 @@ type ReadToken<T extends string> =
     : [T, EOF]
   : [T, EOF];
 
-type Tokenizer<T extends string, Acc extends Token[] = []> =
+type SortTokenizer<T extends string, Acc extends SortToken[] = []> =
   T extends `${infer First}${infer Rest}` ?
-    First extends Whitespace ? Tokenizer<Rest, Acc>
-    : ReadToken<T> extends (
+    First extends Whitespace ? SortTokenizer<Rest, Acc>
+    : ReadSortToken<T> extends (
       [
-        infer Tok extends Token,
-        infer Tok2 extends Token,
-        infer Tok3 extends Token,
+        infer Tok extends SortToken,
+        infer Tok2 extends SortToken,
+        infer Tok3 extends SortToken,
         infer Remaining extends string,
       ]
     ) ?
-      Tokenizer<Remaining, [...Acc, Tok, Tok2, Tok3]>
-    : ReadToken<T> extends (
+      SortTokenizer<Remaining, [...Acc, Tok, Tok2, Tok3]>
+    : ReadSortToken<T> extends (
       [
-        infer Tok extends Token,
-        infer Tok2 extends Token,
+        infer Tok extends SortToken,
+        infer Tok2 extends SortToken,
         infer Remaining extends string,
       ]
     ) ?
-      Tokenizer<Remaining, [...Acc, Tok, Tok2]>
-    : ReadToken<T> extends (
-      [infer Tok extends Token, infer Remaining extends string]
+      SortTokenizer<Remaining, [...Acc, Tok, Tok2]>
+    : ReadSortToken<T> extends (
+      [infer Tok extends SortToken, infer Remaining extends string]
     ) ?
-      Tokenizer<Remaining, [...Acc, Tok]>
+      SortTokenizer<Remaining, [...Acc, Tok]>
     : Acc
   : Acc;
 
-type IsValidIdentifier<
+type IsValidSortIdentifier<
   TCurrent extends Ident<string, FieldType>,
   Schema extends OmitDefaultSortingField<Collection>,
-  TNext extends Token[],
+  TNext extends SortToken[],
 > =
   TCurrent["name"] extends (
-    SortableFields<ExtractFields<Schema>> | "_text_match_score"
+    SortableFields<ExtractFields<Schema>> | "_text_match"
   ) ?
     TNext[0] extends Colon | ConfigToken<"missing_values", "first" | "last"> ?
       true
@@ -157,12 +157,12 @@ type IsValidIdentifier<
   : `Invalid identifier: ${TCurrent["name"]} is not a field of collection ${Schema["name"]}.`;
 
 type IsValid<
-  Current extends Token,
+  Current extends SortToken,
   Schema extends OmitDefaultSortingField<Collection>,
-  TNext extends Token[],
+  TNext extends SortToken[],
 > =
   Current extends Ident<string, FieldType> ?
-    IsValidIdentifier<Current, Schema, TNext>
+    IsValidSortIdentifier<Current, Schema, TNext>
   : Current extends Colon ?
     TNext[0] extends SortOrder ?
       true
@@ -172,10 +172,10 @@ type IsValid<
     : TNext[0] extends Comma ? true
     : `Invalid token sequence: sort direction must be followed by \`,\` or end of input.`
   : Current extends Comma ?
-    TNext[0] extends Ident<string, FieldType> | EvalToken<string> ?
+    TNext[0] extends Ident<string, FieldType> | SortEvalToken<string> ?
       true
     : `Invalid token sequence: \`,\` must be followed by an identifier.`
-  : Current extends EvalToken<string> ? IsEvalValid<Current, Schema, TNext>
+  : Current extends SortEvalToken<string> ? IsEvalValid<Current, Schema, TNext>
   : Current extends ConfigToken<string, string> ?
     TNext[0] extends Colon ?
       true
@@ -183,9 +183,9 @@ type IsValid<
   : `Invalid token: \`${Current & string}\`.`;
 
 type IsEvalValid<
-  CurrentToken extends EvalToken<string>,
+  CurrentToken extends SortEvalToken<string>,
   Schema extends OmitDefaultSortingField<Collection>,
-  Next extends Token[],
+  Next extends SortToken[],
 > =
   Next[0] extends Colon ?
     ParseEval<CurrentToken["clause"], Schema> extends infer Result ?
@@ -195,28 +195,30 @@ type IsEvalValid<
     : `Invalid token sequence: '_eval' must be followed by \`:\`.`
   : `Invalid token sequence: '_eval' must be followed by \`:\`.`;
 
-type IsValidArray<
-  TokenArray extends Token[],
+type IsValidSortArray<
+  TokenArray extends SortToken[],
   Schema extends OmitDefaultSortingField<Collection>,
-  Acc extends Token[] = [],
+  Acc extends SortToken[] = [],
 > =
-  TokenArray extends [infer Head extends Token, ...infer Tail extends Token[]] ?
+  TokenArray extends (
+    [infer Head extends SortToken, ...infer Tail extends SortToken[]]
+  ) ?
     IsValid<Head, Schema, Tail> extends true ?
-      IsValidArray<Tail, Schema, [...Acc, Head]>
+      IsValidSortArray<Tail, Schema, [...Acc, Head]>
     : IsValid<Head, Schema, Tail>
   : IsEmpty<Acc> extends false ?
-    IsValid<Acc[0], Schema, Tail<Token, Acc>> extends true ?
+    IsValid<Acc[0], Schema, TupleTail<SortToken, Acc>> extends true ?
       true
-    : IsValid<Acc[0], Schema, Tail<Token, Acc>>
+    : IsValid<Acc[0], Schema, TupleTail<SortToken, Acc>>
   : true;
 
-type Parse<
+type ParseSort<
   T extends string,
   Schema extends OmitDefaultSortingField<Collection>,
 > =
-  Tokenizer<T> extends infer Result ?
-    Result extends Token[] ?
-      IsValidArray<Result, Schema> extends infer IsValid ?
+  SortTokenizer<T> extends infer Result ?
+    Result extends SortToken[] ?
+      IsValidSortArray<Result, Schema> extends infer IsValid ?
         IsValid extends true ?
           true
         : `Invalid token sequence: ${IsValid & string}`
@@ -228,10 +230,10 @@ type Parse<
 export type {
   Ident,
   IsValid,
-  IsValidArray,
+  IsValidSortArray,
   ReadString,
-  Token,
-  Tokenizer,
-  Parse as ParseSort,
+  SortToken,
+  SortTokenizer,
+  ParseSort,
   ConfigToken,
 };

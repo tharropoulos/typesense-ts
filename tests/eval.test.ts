@@ -1,9 +1,9 @@
 import type {
-  CheckSquareBrackets,
+  CheckEvalSquareBrackets,
   FilterClause,
-  IsNextTokenValid,
+  IsNextEvalTokenValid,
   ParseEval,
-  ReadToken,
+  ReadEvalToken,
   Tokenizer,
 } from "@/lexer/eval";
 import type { NumToken } from "@/lexer/token";
@@ -45,29 +45,29 @@ declare module "@/collection/base" {
 
 describe("ReadToken tests", () => {
   it("should read a left square bracket", () => {
-    expectTypeOf<ReadToken<"[age:=20">>().toEqualTypeOf<["[", "age:=20"]>();
+    expectTypeOf<ReadEvalToken<"[age:=20">>().toEqualTypeOf<["[", "age:=20"]>();
   });
 
   it("should read a right square bracket", () => {
-    expectTypeOf<ReadToken<"]age:=20">>().toEqualTypeOf<["]", "age:=20"]>();
+    expectTypeOf<ReadEvalToken<"]age:=20">>().toEqualTypeOf<["]", "age:=20"]>();
   });
 
   it("should read a colon", () => {
-    expectTypeOf<ReadToken<":age:=20">>().toEqualTypeOf<[":", "age:=20"]>();
+    expectTypeOf<ReadEvalToken<":age:=20">>().toEqualTypeOf<[":", "age:=20"]>();
   });
 
   it("should read a comma", () => {
-    expectTypeOf<ReadToken<",age:=20">>().toEqualTypeOf<[",", "age:=20"]>();
+    expectTypeOf<ReadEvalToken<",age:=20">>().toEqualTypeOf<[",", "age:=20"]>();
   });
 
   it("should read a filter clause", () => {
-    expectTypeOf<ReadToken<"(age:=20):30">>().toEqualTypeOf<
+    expectTypeOf<ReadEvalToken<"(age:=20):30">>().toEqualTypeOf<
       [FilterClause<"age:=20", true>, "30"]
     >();
   });
 
   it("should read a number", () => {
-    expectTypeOf<ReadToken<"30:test">>().toEqualTypeOf<
+    expectTypeOf<ReadEvalToken<"30:test">>().toEqualTypeOf<
       [NumToken<"30">, ":test"]
     >();
   });
@@ -104,13 +104,17 @@ describe("Tokenizer tests", () => {
 describe("IsValid tests", () => {
   it("should validate a single filter clause", () => {
     expectTypeOf<
-      IsNextTokenValid<FilterClause<"age:=20", false>, typeof _usersSchema, []>
+      IsNextEvalTokenValid<
+        FilterClause<"age:=20", false>,
+        typeof _usersSchema,
+        []
+      >
     >().toEqualTypeOf<true>();
   });
 
   it("should validate a range filter clause", () => {
     expectTypeOf<
-      IsNextTokenValid<
+      IsNextEvalTokenValid<
         FilterClause<"age:>=20", true>,
         typeof _usersSchema,
         [NumToken<"30">]
@@ -120,13 +124,13 @@ describe("IsValid tests", () => {
 
   it("should validate a colon followed by a number", () => {
     expectTypeOf<
-      IsNextTokenValid<":", typeof _usersSchema, [NumToken<"30">]>
+      IsNextEvalTokenValid<":", typeof _usersSchema, [NumToken<"30">]>
     >().toEqualTypeOf<true>();
   });
 
   it("should validate a comma followed by a filter", () => {
     expectTypeOf<
-      IsNextTokenValid<
+      IsNextEvalTokenValid<
         ",",
         typeof _usersSchema,
         [FilterClause<"age:<=40", true>]
@@ -136,13 +140,13 @@ describe("IsValid tests", () => {
 
   it("should invalidate incorrect tokens after [", () => {
     expectTypeOf<
-      IsNextTokenValid<"[", typeof _usersSchema, [NumToken<"30">]>
+      IsNextEvalTokenValid<"[", typeof _usersSchema, [NumToken<"30">]>
     >().toEqualTypeOf<"Invalid token after `[`, expected filter">();
   });
 
   it("should invalidate incorrect tokens after filter", () => {
     expectTypeOf<
-      IsNextTokenValid<
+      IsNextEvalTokenValid<
         FilterClause<"age:=20", true>,
         typeof _usersSchema,
         ["["]
@@ -152,19 +156,19 @@ describe("IsValid tests", () => {
 
   it("should invalidate incorrect tokens after colon", () => {
     expectTypeOf<
-      IsNextTokenValid<":", typeof _usersSchema, ["["]>
+      IsNextEvalTokenValid<":", typeof _usersSchema, ["["]>
     >().toEqualTypeOf<"Invalid token after `:`, expected number">();
   });
 
   it("should invalidate incorrect tokens after comma", () => {
     expectTypeOf<
-      IsNextTokenValid<",", typeof _usersSchema, [NumToken<"30">]>
+      IsNextEvalTokenValid<",", typeof _usersSchema, [NumToken<"30">]>
     >().toEqualTypeOf<"Invalid token after `,`, expected filter">();
   });
 
   it("should invalidate incorrect tokens after number", () => {
     expectTypeOf<
-      IsNextTokenValid<NumToken<"30">, typeof _usersSchema, [":"]>
+      IsNextEvalTokenValid<NumToken<"30">, typeof _usersSchema, [":"]>
     >().toEqualTypeOf<"Invalid token after number, expected `,` or `]`">();
   });
 });
@@ -172,7 +176,7 @@ describe("IsValid tests", () => {
 describe("CheckSquareBrackets tests", () => {
   it("should validate balanced square brackets", () => {
     expectTypeOf<
-      CheckSquareBrackets<
+      CheckEvalSquareBrackets<
         ["[", FilterClause<"age:=20", true>, ":", NumToken<"30">, "]"]
       >
     >().toEqualTypeOf<true>();
@@ -180,7 +184,7 @@ describe("CheckSquareBrackets tests", () => {
 
   it("should invalidate unbalanced square brackets (more opening)", () => {
     expectTypeOf<
-      CheckSquareBrackets<
+      CheckEvalSquareBrackets<
         ["[", "[", FilterClause<"age:=20", true>, ":", NumToken<"30">, "]"]
       >
     >().toEqualTypeOf<false>();
@@ -188,14 +192,14 @@ describe("CheckSquareBrackets tests", () => {
 
   it("should invalidate unbalanced square brackets (more closing)", () => {
     expectTypeOf<
-      CheckSquareBrackets<
+      CheckEvalSquareBrackets<
         ["[", FilterClause<"age:=20", true>, ":", NumToken<"30">, "]", "]"]
       >
     >().toEqualTypeOf<false>();
   });
 
   it("should validate empty array", () => {
-    expectTypeOf<CheckSquareBrackets<[]>>().toEqualTypeOf<true>();
+    expectTypeOf<CheckEvalSquareBrackets<[]>>().toEqualTypeOf<true>();
   });
 });
 

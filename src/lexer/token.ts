@@ -95,7 +95,7 @@ type Spread = "..";
 type BrGT = ">";
 type BrLT = "<";
 type Comma = ",";
-type Join = "$";
+type DollarSign = "$";
 type EOF = "";
 type Whitespace = " ";
 
@@ -173,7 +173,7 @@ interface TokenMap {
   "]": RSquare;
   "..": Spread;
   ",": Comma;
-  $: Join;
+  $: DollarSign;
 }
 
 export type {
@@ -191,7 +191,7 @@ export type {
   GT,
   GTE,
   Ident,
-  Join,
+  DollarSign,
   LAnd,
   LiteralToken,
   LOr,

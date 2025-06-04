@@ -14,7 +14,8 @@ type IsEmpty<T extends string | unknown[]> =
  * @template Type - The type of the tuple.
  * @template T - The tuple to get the tail of.
  */
-type Tail<Type, T extends Type[]> = T extends [Type, ...infer U] ? U : never;
+type TupleTail<Type, T extends Type[]> =
+  T extends [Type, ...infer U] ? U : never;
 
 /**
  * Helper type to check if two tokens are balanced inside a clause.
@@ -120,5 +121,5 @@ export type {
   ReadNum,
   ReadString,
   SafeTokenMapAccess,
-  Tail,
+  TupleTail,
 };

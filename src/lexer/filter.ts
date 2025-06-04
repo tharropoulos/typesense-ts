@@ -14,13 +14,13 @@ import type {
   Char,
   Colon,
   Comma,
+  DollarSign,
   EOF,
   EQ,
   GeoToken,
   GT,
   GTE,
   Ident,
-  Join,
   LAnd,
   LiteralToken,
   LOr,
@@ -43,14 +43,14 @@ import type {
   ReadNum,
   ReadString,
   SafeTokenMapAccess,
-  Tail,
+  TupleTail,
 } from "@/lexer/types";
 import type { OmitDefaultSortingField } from "@/lib/utils";
 
 /**
  * All the possible tokens.
  */
-type Token =
+type FilterToken =
   | LParen
   | RParen
   | LAnd
@@ -69,7 +69,7 @@ type Token =
   | BrLT
   | Spread
   | Comma
-  | Join
+  | DollarSign
   | Ident<string, FieldType>
   | NumToken<string>
   | LiteralToken<string>
@@ -149,7 +149,7 @@ type ReadNestedReferenceToken<
  * @template Rest - The rest of the string after reading the token, defaults to T.
  * @returns A tuple containing the read token and the remaining string.
  */
-type ReadToken<
+type ReadFilterToken<
   T extends string,
   Acc extends string = EOF,
   Rest extends string = T,
@@ -179,11 +179,11 @@ type ReadToken<
  */
 interface OperatorMap<Schema extends OmitDefaultSortingField<Collection>> {
   "(": {
-    valid: Extract<Token, ValidNextTokenMap<ExtractFields<Schema>>["("]>;
+    valid: Extract<FilterToken, ValidNextTokenMap<ExtractFields<Schema>>["("]>;
     empty: false;
   };
   ")": {
-    valid: Extract<Token, ValidNextTokenMap<ExtractFields<Schema>>[")"]>;
+    valid: Extract<FilterToken, ValidNextTokenMap<ExtractFields<Schema>>[")"]>;
     empty: true;
   };
   ":<": { valid: LiteralToken<string> | NumToken<string>; empty: false };
@@ -219,10 +219,10 @@ interface OperatorMap<Schema extends OmitDefaultSortingField<Collection>> {
  * @template Acc - The accumulator for tokens, defaults to an empty array.
  * @returns An array of Token objects.
  */
-type Tokenizer<
+type FilterTokenizer<
   T extends string,
   Schema extends OmitDefaultSortingField<Collection>,
-  Acc extends Token[] = [],
+  Acc extends FilterToken[] = [],
 > =
   T extends EOF ?
     // If the string is empty, return the accumulated tokens
@@ -230,23 +230,27 @@ type Tokenizer<
   : T extends `\`${string}\`${string}` ?
     // If the is encapsulated in backticks, treat it as an escape token
     ReadEscapeToken<T>[0] extends string ?
-      Tokenizer<
+      FilterTokenizer<
         ReadEscapeToken<T>[1],
         Schema,
         [...Acc, LiteralToken<ReadEscapeToken<T>[0]>]
       >
     : never
-  : ReadToken<T>[0] extends Token ?
+  : ReadFilterToken<T>[0] extends FilterToken ?
     // If the token is a valid token, add it to the accumulator and continue
-    Tokenizer<ReadToken<T>[1], Schema, [...Acc, ReadToken<T>[0]]>
+    FilterTokenizer<
+      ReadFilterToken<T>[1],
+      Schema,
+      [...Acc, ReadFilterToken<T>[0]]
+    >
   : T extends `${infer Head}${infer Tail}` ?
     // If the token is a string, number, or identifier, parse it and continue
     Head extends keyof TokenMap ?
-      Tokenizer<Tail, Schema, [...Acc, TokenMap[Head]]>
-    : Head extends " " ? Tokenizer<Tail, Schema, Acc>
+      FilterTokenizer<Tail, Schema, [...Acc, TokenMap[Head]]>
+    : Head extends " " ? FilterTokenizer<Tail, Schema, Acc>
     : Head extends Char ?
       ReadString<T>[0] extends keyof FieldTypeMap<Schema> ?
-        Tokenizer<
+        FilterTokenizer<
           ReadString<T>[1],
           Schema,
           [
@@ -254,13 +258,13 @@ type Tokenizer<
             Ident<ReadString<T>[0], FieldTypeMap<Schema>[ReadString<T>[0]]>,
           ]
         >
-      : Tokenizer<
+      : FilterTokenizer<
           ReadString<T>[1],
           Schema,
           [...Acc, LiteralToken<ReadString<T>[0]>]
         >
     : Head extends NumericValue ?
-      Tokenizer<ReadNum<T>[1], Schema, [...Acc, NumToken<ReadNum<T>[0]>]>
+      FilterTokenizer<ReadNum<T>[1], Schema, [...Acc, NumToken<ReadNum<T>[0]>]>
     : `Unknown token: ${Head}`
   : T extends keyof TokenMap ?
     // Handle case when the last token is a symbol (e.g. "&&")
@@ -318,7 +322,7 @@ type ValidNextTokenMap<T extends CollectionField[]> = ValidNextParenMap &
  */
 type IsValidValue<
   TCurrent extends NumToken<string> | LiteralToken<string>,
-  TNext extends Token[],
+  TNext extends FilterToken[],
 > =
   TNext[0] extends (
     | RParen
@@ -331,7 +335,7 @@ type IsValidValue<
   : IsEmpty<TNext> extends true ? true
   : `Invalid token sequence: ${TCurrent extends NumToken<string> ?
       `Num Token \`${TCurrent["value"]}`
-    : `Literal Token \`${TCurrent["value"]}`}\` followed by ${GetTokenType<TNext[0]>}`;
+    : `Literal Token \`${TCurrent["value"]}`}\` followed by ${GetFilterTokenType<TNext[0]>}`;
 
 /**
  * Checks if the next token after an identifier is a valid identifier.
@@ -339,13 +343,13 @@ type IsValidValue<
  * @template Fields - The fields of the collection schema.
  * @template NextToken - The following tokens.
  */
-type IsValidIdentifier<
+type IsValidFilterIdentifier<
   CurrentToken extends Ident<string, FieldType>,
   Fields extends CollectionField[],
-  NextToken extends Token[],
+  NextToken extends FilterToken[],
 > =
   NextToken[0] extends ValidNextTokenMap<Fields>[CurrentToken["name"]] ? true
-  : `Invalid token sequence: identifier with name \`${CurrentToken["name"]}\` followed by ${GetTokenType<
+  : `Invalid token sequence: identifier with name \`${CurrentToken["name"]}\` followed by ${GetFilterTokenType<
       NextToken[0]
     >}`;
 
@@ -358,15 +362,15 @@ type IsValidIdentifier<
 type IsValidToken<
   T extends keyof OperatorMap<Schema>,
   Schema extends OmitDefaultSortingField<Collection>,
-  TNext extends Token[],
+  TNext extends FilterToken[],
 > =
   OperatorMap<Schema>[T] extends { valid: infer V; empty: infer E } ?
     TNext[0] extends V ? true
     : E extends true ?
       IsEmpty<TNext> extends true ?
         true
-      : `Invalid token sequence: \`${T}\` followed by ${GetTokenType<TNext[0]>}`
-    : `Invalid token sequence: \`${T}\` followed by ${GetTokenType<TNext[0]>}`
+      : `Invalid token sequence: \`${T}\` followed by ${GetFilterTokenType<TNext[0]>}`
+    : `Invalid token sequence: \`${T}\` followed by ${GetFilterTokenType<TNext[0]>}`
   : never;
 
 /**
@@ -388,9 +392,10 @@ export interface ParseWithJoinTracking<
   T extends string,
   Schema extends OmitDefaultSortingField<Collection>,
 > {
-  isValid: Parse<T, Schema> extends true ? true : false;
-  errors: Parse<T, Schema> extends string ? Parse<T, Schema> : never;
-  joins: ExtractJoins<Tokenizer<T, Schema>, Schema>;
+  isValid: ParseFilter<T, Schema> extends true ? true : false;
+  errors: ParseFilter<T, Schema> extends string ? ParseFilter<T, Schema>
+  : never;
+  joins: ExtractJoins<FilterTokenizer<T, Schema>, Schema>;
 }
 
 /**
@@ -399,14 +404,14 @@ export interface ParseWithJoinTracking<
  * @template Schema - The collection schema.
  */
 type ExtractJoins<
-  TokenArray extends Token[],
+  TokenArray extends FilterToken[],
   Schema extends OmitDefaultSortingField<Collection>,
   Acc extends JoinInfo[] = [],
 > =
   TokenArray extends (
     [
       ReferenceToken<infer Collection, infer Clause>,
-      ...infer Rest extends Token[],
+      ...infer Rest extends FilterToken[],
     ]
   ) ?
     // Extract nested joins from the clause
@@ -427,7 +432,7 @@ type ExtractJoins<
         ]
       >
     : never
-  : TokenArray extends [Token, ...infer Rest extends Token[]] ?
+  : TokenArray extends [FilterToken, ...infer Rest extends FilterToken[]] ?
     ExtractJoins<Rest, Schema, Acc>
   : Acc;
 
@@ -443,8 +448,8 @@ type ExtractNestedJoins<
   Acc extends JoinInfo[] = [],
 > =
   Collection extends keyof Collections ?
-    Tokenizer<Clause, Collections[Collection]> extends (
-      infer ClauseTokens extends Token[]
+    FilterTokenizer<Clause, Collections[Collection]> extends (
+      infer ClauseTokens extends FilterToken[]
     ) ?
       ExtractJoins<ClauseTokens, Collections[Collection], Acc>
     : Acc
@@ -462,19 +467,21 @@ type IsValidJoin<
   Schema extends OmitDefaultSortingField<Collection>,
   JoinedCollectionName extends string,
   JoinClause extends string,
-  TNext extends Token[],
+  TNext extends FilterToken[],
 > =
   Schema["name"] extends keyof CheckReferences ?
     JoinedCollectionName extends keyof Collections ?
       JoinedCollectionName extends CheckReferences[Schema["name"]] ?
-        Parse<JoinClause, Collections[JoinedCollectionName]> extends string ?
-          `[Error on filter for joined collection \`${JoinedCollectionName}\`]: ${Parse<
+        ParseFilter<JoinClause, Collections[JoinedCollectionName]> extends (
+          string
+        ) ?
+          `[Error on filter for joined collection \`${JoinedCollectionName}\`]: ${ParseFilter<
             JoinClause,
             Collections[JoinedCollectionName]
           >}`
         : TNext[0] extends LOr | LAnd ? true
         : IsEmpty<TNext> extends true ? true
-        : `Invalid token sequence: ${GetTokenType<TNext[0]>} cannot be the next token after a join`
+        : `Invalid token sequence: ${GetFilterTokenType<TNext[0]>} cannot be the next token after a join`
       : `Collection \`${JoinedCollectionName}\` not referenced in \`${Schema["name"]}\``
     : `Collection \`${JoinedCollectionName}\` not registered`
   : `Collection \`${Schema["name"]}\` not registered`;
@@ -485,20 +492,20 @@ type IsValidJoin<
  * @template Schema - The collection schema to use for validation.
  * @template TNext - The next token to check.
  */
-type IsNextTokenValid<
-  Current extends Token,
+type IsNextFilterTokenValid<
+  Current extends FilterToken,
   Schema extends OmitDefaultSortingField<Collection>,
-  TNext extends Token[],
+  TNext extends FilterToken[],
 > =
   Current extends NumToken<string> | LiteralToken<string> ?
     IsValidValue<Current, TNext>
   : Current extends Ident<string, FieldType> ?
-    IsValidIdentifier<Current, ExtractFields<Schema>, TNext>
+    IsValidFilterIdentifier<Current, ExtractFields<Schema>, TNext>
   : Current extends keyof OperatorMap<Schema> ?
     IsValidToken<Current, Schema, TNext>
   : Current extends ReferenceToken<infer Collection, infer Clause> ?
     IsValidJoin<Schema, Collection, Clause, TNext>
-  : `Invalid token sequence: Unknown token followed by \`${GetTokenType<TNext[0]>}\``;
+  : `Invalid token sequence: Unknown token followed by \`${GetFilterTokenType<TNext[0]>}\``;
 
 /**
  * Helper type for valid starting tokens.
@@ -517,13 +524,15 @@ type ValidStarts =
  * @template Acc - The accumulator for the tokens.
  * @template FirstTokenProcessed - Whether the first token has been processed.
  */
-type IsValidArray<
-  TokenArray extends Token[],
+type IsValidFilterArray<
+  TokenArray extends FilterToken[],
   Schema extends OmitDefaultSortingField<Collection>,
-  Acc extends Token[] = [],
+  Acc extends FilterToken[] = [],
   FirstTokenProcessed extends boolean = false,
 > =
-  TokenArray extends [infer Head extends Token, ...infer Tail extends Token[]] ?
+  TokenArray extends (
+    [infer Head extends FilterToken, ...infer Tail extends FilterToken[]]
+  ) ?
     FirstTokenProcessed extends false ?
       // If the first token has not been processed, check if it's a valid start token
       Head extends ValidStarts ?
@@ -531,17 +540,21 @@ type IsValidArray<
           // If it's the only token, check if it's a valid reference token
           Head extends ReferenceToken<string> ?
             IsValidJoin<Schema, Head["collection"], Head["clause"], []>
-          : `Invalid token sequence: ${GetTokenType<Head>} cannot be the only token`
-        : IsValidArray<Tail, Schema, [...Acc, Head], true>
+          : `Invalid token sequence: ${GetFilterTokenType<Head>} cannot be the only token`
+        : IsValidFilterArray<Tail, Schema, [...Acc, Head], true>
       : // If it doesn't have a valid start token, return an error
-        `Invalid start token: ${GetTokenType<Head>}`
-    : IsNextTokenValid<Head, Schema, Tail> extends true ?
-      IsValidArray<Tail, Schema, [...Acc, Head], true>
-    : IsNextTokenValid<Head, Schema, Tail>
+        `Invalid start token: ${GetFilterTokenType<Head>}`
+    : IsNextFilterTokenValid<Head, Schema, Tail> extends true ?
+      IsValidFilterArray<Tail, Schema, [...Acc, Head], true>
+    : IsNextFilterTokenValid<Head, Schema, Tail>
   : IsEmpty<Acc> extends false ?
-    IsNextTokenValid<Acc[0], Schema, Tail<Token, Acc>> extends true ?
+    IsNextFilterTokenValid<
+      Acc[0],
+      Schema,
+      TupleTail<FilterToken, Acc>
+    > extends true ?
       true
-    : IsNextTokenValid<Acc[0], Schema, Tail<Token, Acc>>
+    : IsNextFilterTokenValid<Acc[0], Schema, TupleTail<FilterToken, Acc>>
   : true;
 
 // Why a ternary as opposed to a map? Typescript doesn't support mapping over type aliases
@@ -550,7 +563,7 @@ type IsValidArray<
  * @template T - The token to get the type of.
  * @returns The type of the token.
  */
-type GetTokenType<T extends Token> =
+type GetFilterTokenType<T extends FilterToken> =
   T extends NumToken<string> ? "num token"
   : T extends LiteralToken<string> ? "literal token"
   : T extends Ident<string, FieldType> ? "identifier"
@@ -573,8 +586,8 @@ type GetTokenType<T extends Token> =
  * Checks if parentheses are balanced in a clause.
  * @template TokenArray - The array of tokens to check.
  */
-type CheckParentheses<TokenArray extends Token[]> = CheckBalancedTokens<
-  Token,
+type CheckParentheses<TokenArray extends FilterToken[]> = CheckBalancedTokens<
+  FilterToken,
   TokenArray,
   [LParen, RParen]
 >;
@@ -582,139 +595,136 @@ type CheckParentheses<TokenArray extends Token[]> = CheckBalancedTokens<
 /**
  * Checks if square brackets are balanced in a clause.
  */
-type CheckSquareBrackets<TokenArray extends Token[]> = CheckBalancedTokens<
-  Token,
-  TokenArray,
-  [LSquarePrefixed, RSquare]
->;
+type CheckFilterSquareBrackets<TokenArray extends FilterToken[]> =
+  CheckBalancedTokens<FilterToken, TokenArray, [LSquarePrefixed, RSquare]>;
 
 /**
  * Parses a string into a filter clause.
  * @template T - The input string to parse.
  * @template Schema - The collection schema to use for parsing.
  */
-type Parse<
+type ParseFilter<
   T extends string,
   Schema extends OmitDefaultSortingField<Collection>,
 > =
-  Tokenizer<T, Schema> extends infer Tokens extends Token[] ?
+  FilterTokenizer<T, Schema> extends infer Tokens extends FilterToken[] ?
     // If the tokenizer is successful, check if the tokens are valid
-    IsValidArray<Tokens, Schema> extends true ?
+    IsValidFilterArray<Tokens, Schema> extends true ?
       // If the tokens are valid, check if the parentheses and square brackets are balanced
       CheckParentheses<Tokens> extends true ?
-        CheckSquareBrackets<Tokens> extends true ?
+        CheckFilterSquareBrackets<Tokens> extends true ?
           true
         : "Square brackets are not balanced"
       : "Parentheses are not balanced"
-    : IsValidArray<Tokens, Schema>
-  : Tokenizer<T, Schema>;
+    : IsValidFilterArray<Tokens, Schema>
+  : FilterTokenizer<T, Schema>;
 
 export type {
   CheckParentheses,
-  CheckSquareBrackets,
-  ReadToken,
+  CheckFilterSquareBrackets,
+  ReadFilterToken,
   ReadEscapeToken,
-  Tokenizer as FilterTokenizer,
-  IsNextTokenValid,
-  IsValidArray,
+  FilterTokenizer,
+  IsNextFilterTokenValid,
+  IsValidFilterArray,
   ValidNextTokenMap,
   ValidNextOperatorMap,
   TypeToOperatorMap,
-  Parse as ParseFilter,
+  ParseFilter,
 };
 
-type StringToTokens<
-  S extends string,
-  Schema extends OmitDefaultSortingField<Collection>,
-> = Tokenizer<S, Schema>;
+// type StringToTokens<
+//   S extends string,
+//   Schema extends OmitDefaultSortingField<Collection>,
+// > = Tokenizer<S, Schema>;
 
-type TwoLastTokens<T extends Token[]> =
-  T extends (
-    [...infer _Rest, infer SecondToLast extends Token, infer Last extends Token]
-  ) ?
-    [SecondToLast, Last]
-  : T extends [] ? never
-  : never;
+// type TwoLastTokens<T extends Token[]> =
+//   T extends (
+//     [...infer _Rest, infer SecondToLast extends Token, infer Last extends Token]
+//   ) ?
+//     [SecondToLast, Last]
+//   : T extends [] ? never
+//   : never;
 
-interface ValidNextParenMapS<T extends CollectionField[]> {
-  "(": T[number]["name"] | LParen;
-  ")": RParen | LAnd | LOr;
-}
+// interface ValidNextParenMapS<T extends CollectionField[]> {
+//   "(": T[number]["name"] | LParen;
+//   ")": RParen | LAnd | LOr;
+// }
 
-type ValidNextTokenMapS<T extends CollectionField[]> = ValidNextParenMapS<T> &
-  ValidNextOperatorMap<T>;
+// type ValidNextTokenMapS<T extends CollectionField[]> = ValidNextParenMapS<T> &
+//   ValidNextOperatorMap<T>;
 
-interface OperatorMapS<Schema extends OmitDefaultSortingField<Collection>> {
-  "(": {
-    valid: Extract<Token, ValidNextTokenMapS<ExtractFields<Schema>>["("]>;
-    empty: false;
-  };
-  ")": {
-    valid: Extract<Token, ValidNextTokenMapS<ExtractFields<Schema>>[")"]>;
-    empty: true;
-  };
-  ":<": { valid: `${string}`; empty: false };
-  ":>": { valid: `${string}`; empty: false };
-  ":=": { valid: `${string}`; empty: false };
-  ":>=": { valid: `${string}`; empty: false };
-  ":<=": { valid: `${string}`; empty: false };
-  "!=": { valid: `${string}`; empty: false };
-  ":": { valid: `${string}`; empty: false };
-  "&&": {
-    valid:
-      | LParen
-      | ExtractFields<Schema>[number]["name"]
-      | ReferenceToken<string, string>;
-    empty: false;
-  };
-  "||": { valid: LParen | ExtractFields<Schema>[number]["name"]; empty: false };
-  ":[": {
-    valid: BrGT | BrLT | `${number}` | (`${string}` & {});
-    empty: false;
-  };
-  "]": { valid: LAnd | LOr | RParen; empty: true };
-  ">": { valid: NumToken<string>; empty: false };
-  "<": { valid: NumToken<string>; empty: false };
-  "..": { valid: NumToken<string>; empty: false };
-  ",": {
-    valid: NumToken<string> | BrGT | BrLT | LiteralToken<string>;
-    empty: false;
-  };
-}
+// interface OperatorMapS<Schema extends OmitDefaultSortingField<Collection>> {
+//   "(": {
+//     valid: Extract<Token, ValidNextTokenMapS<ExtractFields<Schema>>["("]>;
+//     empty: false;
+//   };
+//   ")": {
+//     valid: Extract<Token, ValidNextTokenMapS<ExtractFields<Schema>>[")"]>;
+//     empty: true;
+//   };
+//   ":<": { valid: `${string}`; empty: false };
+//   ":>": { valid: `${string}`; empty: false };
+//   ":=": { valid: `${string}`; empty: false };
+//   ":>=": { valid: `${string}`; empty: false };
+//   ":<=": { valid: `${string}`; empty: false };
+//   "!=": { valid: `${string}`; empty: false };
+//   ":": { valid: `${string}`; empty: false };
+//   "&&": {
+//     valid:
+//       | LParen
+//       | ExtractFields<Schema>[number]["name"]
+//       | ReferenceToken<string, string>;
+//     empty: false;
+//   };
+//   "||": { valid: LParen | ExtractFields<Schema>[number]["name"]; empty: false };
+//   ":[": {
+//     valid: BrGT | BrLT | `${number}` | (`${string}` & {});
+//     empty: false;
+//   };
+//   "]": { valid: LAnd | LOr | RParen; empty: true };
+//   ">": { valid: NumToken<string>; empty: false };
+//   "<": { valid: NumToken<string>; empty: false };
+//   "..": { valid: NumToken<string>; empty: false };
+//   ",": {
+//     valid: NumToken<string> | BrGT | BrLT | LiteralToken<string>;
+//     empty: false;
+//   };
+// }
 
 // Fix ValidNextTokenMap to handle all token types
 // Get valid next token based on current state
-type GetValidNextToken<
-  T extends Token,
-  Schema extends OmitDefaultSortingField<Collection>,
-> =
-  T extends NumToken<string> | LiteralToken<string> ? LAnd | LOr | RParen | EOF
-  : T extends Ident<string, FieldType> ? EQ | LT | GT | GTE | LTE | NEQ | Colon
-  : T extends keyof OperatorMapS<Schema> ?
-    OperatorMapS<Schema>[T]["empty" & keyof OperatorMapS<Schema>[T]] extends (
-      true
-    ) ?
-      EOF | OperatorMapS<Schema>[T]["valid" & keyof OperatorMapS<Schema>[T]]
-    : OperatorMapS<Schema>[T]["valid" & keyof OperatorMapS<Schema>[T]]
-  : "d";
+// type GetValidNextToken<
+//   T extends Token,
+//   Schema extends OmitDefaultSortingField<Collection>,
+// > =
+//   T extends NumToken<string> | LiteralToken<string> ? LAnd | LOr | RParen | EOF
+//   : T extends Ident<string, FieldType> ? EQ | LT | GT | GTE | LTE | NEQ | Colon
+//   : T extends keyof OperatorMapS<Schema> ?
+//     OperatorMapS<Schema>[T]["empty" & keyof OperatorMapS<Schema>[T]] extends (
+//       true
+//     ) ?
+//       EOF | OperatorMapS<Schema>[T]["valid" & keyof OperatorMapS<Schema>[T]]
+//     : OperatorMapS<Schema>[T]["valid" & keyof OperatorMapS<Schema>[T]]
+//   : "d";
 
-type AppendToken<Current extends string, Next> =
-  Next extends string | number ? `${Current}${Next}`
-  : Current extends "" ? Next
-  : never;
+// type AppendToken<Current extends string, Next> =
+//   Next extends string | number ? `${Current}${Next}`
+//   : Current extends "" ? Next
+//   : never;
 
-type AutoComplete<
-  S extends string,
-  Schema extends OmitDefaultSortingField<Collection>,
-> = AppendToken<
-  S,
-  GetValidNextToken<TwoLastTokens<StringToTokens<S, Schema>>[1], Schema>
->;
+// type AutoComplete<
+//   S extends string,
+//   Schema extends OmitDefaultSortingField<Collection>,
+// > = AppendToken<
+//   S,
+//   GetValidNextToken<TwoLastTokens<StringToTokens<S, Schema>>[1], Schema>
+// >;
 
-export declare function testFilter<
-  const S extends string,
-  Schema extends OmitDefaultSortingField<Collection>,
->(
-  schema: Schema,
-  s: S extends "" ? S | AutoComplete<S, Schema> : AutoComplete<S, Schema>,
-): Parse<S, Schema>;
+// export declare function testFilter<
+//   const S extends string,
+//   Schema extends OmitDefaultSortingField<Collection>,
+// >(
+//   schema: Schema,
+//   s: S extends "" ? S | AutoComplete<S, Schema> : AutoComplete<S, Schema>,
+// ): Parse<S, Schema>;

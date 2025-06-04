@@ -3,9 +3,9 @@ import type {
   ConfigToken,
   Ident,
   IsValid,
-  IsValidArray,
+  IsValidSortArray,
   ParseSort,
-  Tokenizer,
+  SortTokenizer,
 } from "@/lexer/sort";
 import type { Colon } from "@/lexer/token";
 
@@ -51,13 +51,13 @@ const _usersSchema = collection({
 
 describe("Tokenizer tests", () => {
   it("should tokenize a simple sort expression", () => {
-    expectTypeOf<Tokenizer<"age:desc">>().toEqualTypeOf<
+    expectTypeOf<SortTokenizer<"age:desc">>().toEqualTypeOf<
       [Ident<"age", FieldType>, Colon, "desc"]
     >();
   });
 
   it("should tokenize multiple sort expressions", () => {
-    expectTypeOf<Tokenizer<"age:desc,score:asc">>().toEqualTypeOf<
+    expectTypeOf<SortTokenizer<"age:desc,score:asc">>().toEqualTypeOf<
       [
         Ident<"age", FieldType>,
         Colon,
@@ -71,7 +71,9 @@ describe("Tokenizer tests", () => {
   });
 
   it("should tokenize sort with missing_values config", () => {
-    expectTypeOf<Tokenizer<"age(missing_values:first):desc ">>().toEqualTypeOf<
+    expectTypeOf<
+      SortTokenizer<"age(missing_values:first):desc ">
+    >().toEqualTypeOf<
       [
         Ident<"age", FieldType>,
         ConfigToken<"missing_values", "first">,
@@ -82,7 +84,7 @@ describe("Tokenizer tests", () => {
   });
 
   it("should tokenize _eval expression", () => {
-    expectTypeOf<Tokenizer<"_eval(age:>=20):desc">>().toEqualTypeOf<
+    expectTypeOf<SortTokenizer<"_eval(age:>=20):desc">>().toEqualTypeOf<
       [{ type: "eval"; clause: "age:>=20" }, Colon, "desc"]
     >();
   });
@@ -104,7 +106,7 @@ describe("IsValid tests", () => {
   it("should validate _text_match_score field", () => {
     expectTypeOf<
       IsValid<
-        Ident<"_text_match_score", "float">,
+        Ident<"_text_match", "float">,
         typeof _usersSchema,
         [Colon, "desc"]
       >
@@ -159,13 +161,16 @@ describe("IsValid tests", () => {
 describe("IsValidArray tests", () => {
   it("should validate single sort expression", () => {
     expectTypeOf<
-      IsValidArray<[Ident<"age", "int32">, Colon, "desc"], typeof _usersSchema>
+      IsValidSortArray<
+        [Ident<"age", "int32">, Colon, "desc"],
+        typeof _usersSchema
+      >
     >().toEqualTypeOf<true>();
   });
 
   it("should validate multiple sort expressions", () => {
     expectTypeOf<
-      IsValidArray<
+      IsValidSortArray<
         [
           Ident<"age", "int32">,
           Colon,
@@ -182,7 +187,7 @@ describe("IsValidArray tests", () => {
 
   it("should validate sort with config", () => {
     expectTypeOf<
-      IsValidArray<
+      IsValidSortArray<
         [
           Ident<"age", "int32">,
           { type: "config"; key: "missing_values"; value: "first" },
@@ -216,7 +221,7 @@ describe("FilterParse tests", () => {
 
   it("should parse sort with _text_match_score", () => {
     expectTypeOf<
-      ParseSort<"_text_match_score:asc, age:asc", typeof _usersSchema>
+      ParseSort<"_text_match:asc, age:asc", typeof _usersSchema>
     >().toEqualTypeOf<true>();
   });
 

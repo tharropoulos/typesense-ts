@@ -420,7 +420,7 @@ const ARRAY_KEYS = {
   query_by_weights: true,
   num_typos: true,
   facet_return_parent: true,
-  stopwords: true
+  stopwords: true,
 } as const satisfies Record<NonNullable<ArraySearchParams>, true>;
 
 interface BaseHighlightV1<T extends CollectionField> {
@@ -787,11 +787,11 @@ interface Hit<
 type Split<S extends string> =
   S extends `${infer First}${infer Rest}` ? [First, ...Split<Rest>] : [];
 
-type Join<T extends string[]> =
+type SearchJoin<T extends string[]> =
   T extends [] ? ""
   : T extends [infer First extends string] ? First
   : T extends [infer First extends string, ...infer Rest extends string[]] ?
-    `${First}${Join<Rest>}`
+    `${First}${SearchJoin<Rest>}`
   : never;
 
 type RemoveMatch<
@@ -802,7 +802,7 @@ type RemoveMatch<
   Tuple extends (
     readonly [infer First extends string, ...infer Rest extends string[]]
   ) ?
-    Join<Split<First>> extends Template ?
+    SearchJoin<Split<First>> extends Template ?
       RemoveMatch<Rest, Template, Acc>
     : RemoveMatch<Rest, Template, [...Acc, First]>
   : Acc;

@@ -14,7 +14,7 @@ import type {
   CheckBalancedTokens,
   IsEmpty,
   ReadNum,
-  Tail,
+  TupleTail,
 } from "@/lexer/types";
 import type { OmitDefaultSortingField, Recurse } from "@/lib/utils";
 
@@ -24,7 +24,7 @@ interface FilterClause<C extends string, I extends boolean> {
   in_range: I;
 }
 
-type Token =
+type EvalToken =
   | FilterClause<string, boolean>
   | NumToken<string>
   | Colon
@@ -37,7 +37,7 @@ type TrimLeft<T extends string> =
   : T extends `${infer Pre})${Whitespace}:${infer Post}` ? `${Pre}):${Post}`
   : T;
 
-type ReadToken<T extends string> =
+type ReadEvalToken<T extends string> =
   T extends `[${infer Rest}` ? [LSquare, Rest]
   : T extends `]${infer Rest}` ? [RSquare, Rest]
   : T extends `:${infer Rest}` ? [Colon, Rest]
@@ -50,28 +50,30 @@ type ReadToken<T extends string> =
     : [EOF, T]
   : T extends `${infer FirstChar}${infer Rest}` ?
     FirstChar extends Whitespace ?
-      ReadToken<Rest>
+      ReadEvalToken<Rest>
     : [FilterClause<T, false>, EOF]
   : [EOF, T];
 
-type Tokenizer<T extends string, Acc extends Token[] = []> =
+type Tokenizer<T extends string, Acc extends EvalToken[] = []> =
   T extends EOF ? Acc
   : T extends `${Whitespace}${infer Rest}` ? Tokenizer<Rest, Acc>
-  : ReadToken<TrimLeft<T>> extends (
-    [infer TokenType extends Token, infer Rest extends string]
+  : ReadEvalToken<TrimLeft<T>> extends (
+    [infer TokenType extends EvalToken, infer Rest extends string]
   ) ?
     Rest extends EOF ?
       [...Acc, TokenType]
     : Tokenizer<Rest, [...Acc, TokenType]>
   : Acc;
 
-type IsValidArray<
-  TokenArray extends Token[],
+type IsValidEvalArray<
+  TokenArray extends EvalToken[],
   Schema extends OmitDefaultSortingField<Collection>,
-  Acc extends Token[] = [],
+  Acc extends EvalToken[] = [],
   FirstTokenProcessed extends boolean = false,
 > =
-  TokenArray extends [infer Head extends Token, ...infer Tail extends Token[]] ?
+  TokenArray extends (
+    [infer Head extends EvalToken, ...infer Tail extends EvalToken[]]
+  ) ?
     FirstTokenProcessed extends false ?
       // If the first token has not been processed, check if it's a valid start token
       Head extends FilterClause<string, false> | LSquare ?
@@ -82,19 +84,21 @@ type IsValidArray<
                 true
               : `[Error on filter]: ${Result & string}`
             : `[Error on filter]: couldn't parse filter`
-          : `Invalid token sequence: ${GetTokenType<Head>} cannot be the only token`
-        : IsValidArray<Tail, Schema, [...Acc, Head], true>
-      : `Invalid start token: ${GetTokenType<Head>}`
-    : IsNextTokenValid<Head, Schema, Tail> extends true ?
-      IsValidArray<Tail, Schema, [...Acc, Head], true>
-    : IsNextTokenValid<Head, Schema, Tail>
+          : `Invalid token sequence: ${GetEvalTokenType<Head>} cannot be the only token`
+        : IsValidEvalArray<Tail, Schema, [...Acc, Head], true>
+      : `Invalid start token: ${GetEvalTokenType<Head>}`
+    : IsNextEvalTokenValid<Head, Schema, Tail> extends true ?
+      IsValidEvalArray<Tail, Schema, [...Acc, Head], true>
+    : IsNextEvalTokenValid<Head, Schema, Tail>
   : IsEmpty<Acc> extends false ?
-    IsNextTokenValid<Acc[0], Schema, Tail<Token, Acc>> extends true ?
+    IsNextEvalTokenValid<Acc[0], Schema, TupleTail<EvalToken, Acc>> extends (
       true
-    : IsNextTokenValid<Acc[0], Schema, Tail<Token, Acc>>
+    ) ?
+      true
+    : IsNextEvalTokenValid<Acc[0], Schema, TupleTail<EvalToken, Acc>>
   : true;
 
-type GetTokenType<T extends Token> =
+type GetEvalTokenType<T extends EvalToken> =
   T extends FilterClause<string, boolean> ? "filter clause"
   : T extends NumToken<string> ? "number"
   : T extends LSquare ? "`[`"
@@ -106,7 +110,7 @@ type GetTokenType<T extends Token> =
 type IsValidFilterClause<
   Clause extends string,
   Schema extends OmitDefaultSortingField<Collection>,
-  TNext extends Token[],
+  TNext extends EvalToken[],
   InRange extends boolean,
 > =
   InRange extends true ?
@@ -125,11 +129,14 @@ type IsValidFilterClause<
     : `[Error on filter]: couldn't parse filter`
   : `Invalid token: a filter must be the only token in _eval`;
 
-type IsValidNumber<TNext extends Token[]> =
+type IsValidNumber<TNext extends EvalToken[]> =
   TNext[0] extends Comma | RSquare ? true
   : `Invalid token after number, expected \`,\` or \`]\``;
 
-type IsValidBracket<Current extends LSquare | RSquare, TNext extends Token[]> =
+type IsValidBracket<
+  Current extends LSquare | RSquare,
+  TNext extends EvalToken[],
+> =
   Current extends LSquare ?
     TNext[0] extends FilterClause<string, true> ?
       true
@@ -138,7 +145,7 @@ type IsValidBracket<Current extends LSquare | RSquare, TNext extends Token[]> =
   : TNext[0] extends EOF ? true
   : `Invalid token after \`]\`, expected EOF`;
 
-type IsValidOperator<Current extends Colon | Comma, TNext extends Token[]> =
+type IsValidOperator<Current extends Colon | Comma, TNext extends EvalToken[]> =
   Current extends Colon ?
     TNext[0] extends NumToken<string> ?
       true
@@ -146,10 +153,10 @@ type IsValidOperator<Current extends Colon | Comma, TNext extends Token[]> =
   : TNext[0] extends FilterClause<string, true> ? true
   : `Invalid token after \`,\`, expected filter`;
 
-type IsNextTokenValid<
-  Current extends Token,
+type IsNextEvalTokenValid<
+  Current extends EvalToken,
   Schema extends OmitDefaultSortingField<Collection>,
-  TNext extends Token[],
+  TNext extends EvalToken[],
 > =
   Current extends FilterClause<infer Clause, infer InRange> ?
     IsValidFilterClause<Clause, Schema, TNext, InRange>
@@ -158,22 +165,20 @@ type IsNextTokenValid<
   : Current extends Colon | Comma ? IsValidOperator<Current, TNext>
   : Current extends string ? `Invalid token: \`${Current}\``
   : "Invalid token";
-type CheckSquareBrackets<TokenArray extends Token[]> = CheckBalancedTokens<
-  Token,
-  TokenArray,
-  [LSquare, RSquare]
->;
 
-type Parse<
+type CheckEvalSquareBrackets<TokenArray extends EvalToken[]> =
+  CheckBalancedTokens<EvalToken, TokenArray, [LSquare, RSquare]>;
+
+type ParseEval<
   T extends string,
   Schema extends OmitDefaultSortingField<Collection>,
 > = Recurse<
-  Tokenizer<T> extends infer Tokens extends Token[] ?
+  Tokenizer<T> extends infer Tokens extends EvalToken[] ?
     // If the tokenizer is successful, check if the tokens are valid
-    IsValidArray<Tokens, Schema> extends infer IsValid ?
+    IsValidEvalArray<Tokens, Schema> extends infer IsValid ?
       IsValid extends true ?
         // If the tokens are valid, check if the parentheses and square brackets are balanced
-        CheckSquareBrackets<Tokens> extends true ?
+        CheckEvalSquareBrackets<Tokens> extends true ?
           true
         : "Square brackets are not balanced"
       : IsValid
@@ -184,9 +189,9 @@ type Parse<
 export type {
   FilterClause,
   Tokenizer,
-  IsNextTokenValid,
-  ReadToken,
-  CheckSquareBrackets,
+  IsNextEvalTokenValid,
+  ReadEvalToken,
+  CheckEvalSquareBrackets,
   ReadNum,
-  Parse as ParseEval,
+  ParseEval,
 };
