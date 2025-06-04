@@ -6,7 +6,41 @@ import type { Override, OverrideCreate, OverrideOperations } from "@/override";
 import { getConfiguration } from "@/config";
 import { makeRequest } from "@/http/fetch/request";
 
-export function override<
+interface OverrideResponse<
+  CollectionName extends Collections[keyof Collections]["name"],
+> extends Override<
+    string,
+    CollectionName,
+    OmitDefaultSortingField<GetSchemaFromName<CollectionName>>,
+    string,
+    string,
+    string[]
+  > {
+  id: string;
+}
+
+/**
+ * Retrieve all overrides for a given collection
+ */
+async function retrieveAllOverrides<
+  const CollectionName extends Collections[keyof Collections]["name"],
+>(
+  collection: CollectionName,
+  config?: Configuration,
+): Promise<{
+  overrides: OverrideResponse<CollectionName>[];
+}> {
+  return makeRequest({
+    endpoint: `/collections/${collection}/overrides`,
+    config: getConfiguration(config),
+    method: "GET",
+  });
+}
+
+/**
+ * Validate a new override for a given collection.
+ */
+function override<
   const OverrideName extends string,
   const CollectionName extends Collections[keyof Collections]["name"],
   const Schema extends OmitDefaultSortingField<
@@ -62,3 +96,5 @@ export function override<
     },
   };
 }
+
+export { override, retrieveAllOverrides };
