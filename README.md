@@ -2,10 +2,18 @@
   <h1>typesense-ts 🔍</h1>
 </div>
 
+<div align="center" style="font-size:1.5rem; font-weight:600; margin-bottom: 1rem;">
+  A fully type-safe, <strong>unofficial</strong> Typesense client for Node.js written in TypeScript that provides compile-time validation on almost every parameter.
+</div>
+
+<div align="center">
+  <video width="80%" controls>
+    <source src="showcase.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+</div>
+
 &nbsp;
-
-A fully type-safe, **unofficial** Typesense client for Node.js written in TypeScript that provides compile-time validation on almost every parameter.
-
 **Note**: Although I maintain both this library and the [main](https://github.com/typesense/typesense-js) client, this library is unofficial and a passion project. For official support, please refer to the [Typesense documentation](https://typesense.org/docs/).
 
 ## Features
