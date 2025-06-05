@@ -64,8 +64,8 @@ declare module "@/collection/base" {
 }
 
 declare module "@/analytics/rules" {
-  interface GlobalAnalyticRules {
-    counter: typeof counterRule;
+  interface AnalyticsRules {
+    counter: typeof counterRule.rule;
   }
 }
 const config = configure({

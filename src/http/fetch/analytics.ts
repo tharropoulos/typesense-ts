@@ -1,9 +1,9 @@
 import type { AnalyticsEvent, ValidEventCombos } from "@/analytics/events";
 import type {
   AnalyticsRule,
+  AnalyticsRules
   Destinations,
   EventType,
-  GlobalAnalyticRules,
   RuleTypes,
 } from "@/analytics/rules";
 import type { Configuration } from "@/config";

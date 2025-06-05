@@ -1,8 +1,8 @@
 import type {
   AnalyticsRule,
+  AnalyticsRules,
   BaseEvent,
   EventType,
-  GlobalAnalyticRules,
 } from "@/analytics/rules";
 
 type ExtractBaseEvents<Rule> =
@@ -15,8 +15,8 @@ type ExtractBaseEvents<Rule> =
   : never;
 
 type ValidEventCombos = {
-  [K in keyof GlobalAnalyticRules]: ExtractBaseEvents<GlobalAnalyticRules[K]>;
-}[keyof GlobalAnalyticRules];
+  [K in keyof AnalyticsRules]: ExtractBaseEvents<AnalyticsRules[K]>;
+}[keyof AnalyticsRules];
 
 type ValidEventNames<T extends EventType> = Extract<
   ValidEventCombos,

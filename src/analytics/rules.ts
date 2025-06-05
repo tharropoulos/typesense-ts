@@ -200,16 +200,15 @@ interface LogRule<
 type ExtractRuleTypes<
   Destination extends Collections[keyof Collections]["name"],
 > =
-  keyof GlobalAnalyticRules extends never ?
-    Collections[keyof Collections]["name"]
-  : GlobalAnalyticRules[keyof GlobalAnalyticRules] extends infer Rule ?
+  keyof AnalyticsRules extends never ? Collections[keyof Collections]["name"]
+  : AnalyticsRules[keyof AnalyticsRules] extends infer Rule ?
     Rule extends { params: { destination: { collection: Destination } } } ?
       Rule
     : never
   : never;
 
 type DestinationRuleTypesMap = {
-  [Destination in Collections[keyof Collections]["name"]]: keyof GlobalAnalyticRules extends (
+  [Destination in Collections[keyof Collections]["name"]]: keyof AnalyticsRules extends (
     never
   ) ?
     never
@@ -223,8 +222,7 @@ type DestinationRuleTypesMap = {
 type IsNotMember<T, U> = T extends U ? false : true;
 
 type _AvailableDestinations<RType extends RuleTypes> =
-  keyof GlobalAnalyticRules extends never ?
-    Collections[keyof Collections]["name"]
+  keyof AnalyticsRules extends never ? Collections[keyof Collections]["name"]
   : {
       [K in keyof DestinationRuleTypesMap]: DestinationRuleTypesMap[K] extends (
         never
@@ -303,10 +301,10 @@ function analyticsRule<
  * Interface for global analytics rule configurations
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-interface GlobalAnalyticRules {}
+interface AnalyticsRules {}
 
 export type {
-  GlobalAnalyticRules,
+  AnalyticsRules,
   AnalyticsRule,
   EventType,
   RuleTypes,

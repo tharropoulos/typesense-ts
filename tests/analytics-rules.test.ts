@@ -76,9 +76,9 @@ const popular_rule = analyticsRule({
 });
 
 declare module "@/analytics/rules" {
-  interface GlobalAnalyticRules {
-    "no-hits-rule": typeof no_hits_rule;
-    "popular-queries-rule": typeof popular_rule;
+  interface AnalyticsRules {
+    "no-hits-rule": typeof no_hits_rule.rule;
+    "popular-queries-rule": typeof popular_rule.rule;
   }
 }
 
