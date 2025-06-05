@@ -70,6 +70,7 @@ interface FieldTypeToNativeTypeMap {
   "string*": string;
   image: string;
   object: DocumentSchema;
+  "object[]": DocumentSchema[];
 }
 
 /**
