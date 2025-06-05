@@ -1,5 +1,6 @@
 import type { Aliases, GetCollectionName } from "@/alias";
 import type { Collections, CounterFields } from "@/collection/base";
+import type { Configuration } from "@/config";
 
 /**
  * Helper type to check if an array of objects has unique 'name' properties
@@ -303,6 +304,27 @@ function analyticsRule<
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface AnalyticsRules {}
 
+interface AnalyticsRuleOperations<
+  Name extends string,
+  Destination extends Destinations,
+  RuleType extends RuleTypes,
+  Events extends { name: string; type: EventType }[],
+> {
+  readonly rule: AnalyticsRule<Destination, RuleType, Events> & { name: Name };
+  retrieve(
+    config?: Configuration,
+  ): Promise<AnalyticsRule<Destination, RuleType, Events> & { name: Name }>;
+  delete(
+    config?: Configuration,
+  ): Promise<AnalyticsRule<Destination, RuleType, Events> & { name: Name }>;
+  upsert(
+    config?: Configuration,
+  ): Promise<AnalyticsRule<Destination, RuleType, Events> & { name: Name }>;
+  create(
+    config?: Configuration,
+  ): Promise<AnalyticsRule<Destination, RuleType, Events> & { name: Name }>;
+}
+
 export type {
   AnalyticsRules,
   AnalyticsRule,
@@ -314,6 +336,7 @@ export type {
   CounterRule,
   LogRule,
   Destinations,
+  AnalyticsRuleOperations,
 };
 
 export { analyticsRule };
