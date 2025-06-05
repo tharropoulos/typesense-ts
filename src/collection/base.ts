@@ -583,12 +583,16 @@ function collection<
   [{ name: "id"; type: "string" }, ...Fields],
   Name,
   DefaultSort
-> {
+> & {
+  infer: InferNativeType<[{ name: "id"; type: "string" }, ...Fields]>;
+} {
   return schema as CollectionCreate<
     [{ name: "id"; type: "string" }, ...Fields],
     Name,
     DefaultSort
-  >;
+  > & {
+    infer: InferNativeType<[{ name: "id"; type: "string" }, ...Fields]>;
+  };
 }
 
 /**
@@ -737,6 +741,18 @@ export type ConstructHierarchicalType<
   Field extends `${infer First}.${infer Rest}` ?
     Rest extends `${string}.${string}` ?
       Record<First, ConstructHierarchicalType<Fields, Rest, FullPath>>
+    : CollectionFieldFromTuple<[FullPath], Fields>[0]["optional"] extends true ?
+      Record<
+        First,
+        Partial<
+          Record<
+            Rest,
+            InferNativeTypeForField<
+              CollectionFieldFromTuple<[FullPath], Fields>[0]
+            >
+          >
+        >
+      >
     : Record<
         First,
         Record<
@@ -746,6 +762,13 @@ export type ConstructHierarchicalType<
           >
         >
       >
+  : CollectionFieldFromTuple<[FullPath], Fields>[0]["optional"] extends true ?
+    Partial<
+      Record<
+        Field,
+        InferNativeTypeForField<CollectionFieldFromTuple<[FullPath], Fields>[0]>
+      >
+    >
   : Record<
       Field,
       InferNativeTypeForField<CollectionFieldFromTuple<[FullPath], Fields>[0]>
@@ -761,6 +784,13 @@ type InferNestedStructure<
 > =
   Field extends `${BreakAt}.${infer Rest}` ?
     Record<BreakAt, ConstructHierarchicalType<Fields, Rest, Field>>
+  : CollectionFieldFromTuple<[Field], Fields>[0]["optional"] extends true ?
+    Partial<
+      Record<
+        Field,
+        InferNativeTypeForField<CollectionFieldFromTuple<[Field], Fields>[0]>
+      >
+    >
   : Record<
       Field,
       InferNativeTypeForField<CollectionFieldFromTuple<[Field], Fields>[0]>

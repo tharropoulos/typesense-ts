@@ -1442,7 +1442,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toEqualTypeOf<{
         field: string;
         id: string;
       }>();
@@ -1458,7 +1458,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toEqualTypeOf<{
         field: string[];
         id: string;
       }>();
@@ -1474,7 +1474,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toEqualTypeOf<{
         field: number;
         id: string;
       }>();
@@ -1490,7 +1490,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toEqualTypeOf<{
         field: number[];
         id: string;
       }>();
@@ -1506,7 +1506,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toEqualTypeOf<{
         field: number;
         id: string;
       }>();
@@ -1522,7 +1522,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toEqualTypeOf<{
         field: number[];
         id: string;
       }>();
@@ -1538,7 +1538,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toEqualTypeOf<{
         field: number;
         id: string;
       }>();
@@ -1554,7 +1554,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toEqualTypeOf<{
         field: number[];
         id: string;
       }>();
@@ -1570,7 +1570,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toEqualTypeOf<{
         field: boolean;
         id: string;
       }>();
@@ -1586,7 +1586,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toEqualTypeOf<{
         field: boolean[];
         id: string;
       }>();
@@ -1602,7 +1602,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toEqualTypeOf<{
         field: [number, number];
         id: string;
       }>();
@@ -1618,7 +1618,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toEqualTypeOf<{
         field: [number, number][];
         id: string;
       }>();
@@ -1634,8 +1634,19 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
-        field: unknown;
+      // Let's check if this is a union to intersection issue
+      expectTypeOf<typeof _schema.infer>().toEqualTypeOf<{
+        field:
+          | string
+          | number
+          | boolean
+          | [number, number]
+          | string[]
+          | number[]
+          | boolean[]
+          | [number, number][]
+          | DocumentSchema
+          | DocumentSchema[];
         id: string;
       }>();
     });
@@ -1650,7 +1661,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toEqualTypeOf<{
         field: string;
         id: string;
       }>();
@@ -1666,7 +1677,7 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toEqualTypeOf<{
         field: string;
         id: string;
       }>();
@@ -1683,8 +1694,8 @@ describe("collection tests", () => {
         ],
       });
 
-      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
-        field: string | undefined;
+      expectTypeOf<typeof _schema.infer>().toEqualTypeOf<{
+        field?: string | undefined;
         id: string;
       }>();
     });
@@ -1700,7 +1711,7 @@ describe("collection tests", () => {
         enable_nested_fields: true,
       });
 
-      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toEqualTypeOf<{
         field: DocumentSchema;
         id: string;
       }>();
@@ -1729,13 +1740,14 @@ describe("collection tests", () => {
         enable_nested_fields: true,
       });
 
-      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toEqualTypeOf<{
         field: {
           child: string;
           child2: {
             child: string;
           };
         };
+        id: string;
       }>();
     });
     it("can infer the native type of flattened object fields", () => {
@@ -1759,7 +1771,8 @@ describe("collection tests", () => {
         enable_nested_fields: true,
       });
 
-      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toEqualTypeOf<{
+        id: string;
         field: {
           child: string;
         };
@@ -1791,11 +1804,12 @@ describe("collection tests", () => {
         enable_nested_fields: true,
       });
 
-      expectTypeOf<typeof _schema.infer>().toMatchTypeOf<{
+      expectTypeOf<typeof _schema.infer>().toEqualTypeOf<{
+        id: string;
         field: {
           child: string;
           child2: {
-            child: string | undefined;
+            child?: string | undefined;
           };
         };
       }>();
