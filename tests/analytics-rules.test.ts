@@ -1,12 +1,8 @@
-import { analyticsRule } from "@/analytics/rules";
 import { collection } from "@/collection/base";
-import { configure } from "@/config";
+import { configure, setDefaultConfiguration } from "@/config";
 import {
-  createAnalyticsRule,
-  deleteAnalyticsRule,
+  analyticsRule,
   retrieveAllAnalyticsRules,
-  retrieveAnalyticsRule,
-  upsertAnalyticsRule,
 } from "@/http/fetch/analytics";
 import { upAll } from "docker-compose";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -95,6 +91,7 @@ const config = configure({
 });
 
 beforeAll(async () => {
+  setDefaultConfiguration(config);
   if (!isCi) {
     await upAll({ cwd: __dirname, log: true });
   }
@@ -142,47 +139,70 @@ afterAll(async () => {
 describe("analytics rules", () => {
   describe("delete analytics rule", () => {
     beforeAll(async () => {
-      await createAnalyticsRule(no_hits_rule, config);
+      await no_hits_rule.create();
     });
 
     it("should throw an error if the rule doesn't exist", async () => {
       await expect(async () => {
-        // @ts-expect-error This should fail because the rule doesn't exist
-        await deleteAnalyticsRule("non-existing-rule", config);
+        const non_existing_rule = analyticsRule({
+          name: "non-existing-rule",
+          type: "popular_queries",
+          params: {
+            destination: {
+              collection: "counter",
+            },
+            source: {
+              collections: ["source"],
+            },
+          },
+        });
+        await non_existing_rule.delete();
       }).rejects.toThrow("Rule not found.");
     });
 
     it("should delete an analytics rule", async () => {
-      await deleteAnalyticsRule("no-hits-rule", config);
+      await no_hits_rule.delete();
 
       await expect(async () => {
-        await retrieveAnalyticsRule("no-hits-rule", config);
+        await no_hits_rule.retrieve();
       }).rejects.toThrow("Rule not found.");
     });
   });
 
   describe("retrieve analytics rule", () => {
     beforeAll(async () => {
-      await createAnalyticsRule(no_hits_rule, config);
+      await no_hits_rule.create();
 
-      await createAnalyticsRule(popular_rule, config);
+      await popular_rule.create();
     });
 
     afterAll(async () => {
-      await deleteAnalyticsRule("no-hits-rule", config);
+      await no_hits_rule.delete();
 
-      await deleteAnalyticsRule("popular-queries-rule", config);
+      await popular_rule.delete();
     });
 
     it("should throw an error if the rule doesn't exist", async () => {
       await expect(async () => {
-        // @ts-expect-error This should fail because the rule doesn't exist
-        await retrieveAnalyticsRule("non-existing-rule", config);
+        const non_existing_rule = analyticsRule({
+          name: "non-existing-rule",
+          type: "popular_queries",
+          params: {
+            destination: {
+              collection: "counter",
+            },
+            source: {
+              collections: ["source"],
+            },
+          },
+        });
+
+        await non_existing_rule.retrieve();
       }).rejects.toThrow("Rule not found.");
     });
 
     it("should retrieve a single analytics rule", async () => {
-      const rules = await retrieveAnalyticsRule("popular-queries-rule", config);
+      const rules = await popular_rule.retrieve();
 
       expect(rules).toEqual({
         name: "popular-queries-rule",
@@ -240,111 +260,99 @@ describe("analytics rules", () => {
   describe("create analytics rule", () => {
     it("shouldn't create a rule with events with non-unique names", async () => {
       await expect(async () => {
-        await createAnalyticsRule(
-          {
-            type: "counter",
-            name: "test-rule",
-            params: {
-              source: {
-                collections: ["source"],
-                events: [
-                  {
-                    name: "click",
-                    type: "click",
-                    weight: 1,
-                  },
-                  {
-                    name: "click",
-                    type: "click",
-                    weight: 3,
-                  },
-                ],
-              },
-              destination: {
-                collection: "source",
-                counter_field: "counter",
-              },
+        await analyticsRule({
+          type: "counter",
+          name: "test-rule",
+          params: {
+            source: {
+              collections: ["source"],
+              events: [
+                {
+                  name: "click",
+                  type: "click",
+                  weight: 1,
+                },
+                {
+                  name: "click",
+                  type: "click",
+                  weight: 3,
+                },
+              ],
+            },
+            destination: {
+              collection: "source",
+              counter_field: "counter",
             },
           },
-          config,
-        );
+        }).create();
       }).rejects.toThrow("Events must contain a unique name.");
     });
 
     it("shouldn't create a rule with a non-existing source collection", async () => {
       await expect(async () => {
-        await createAnalyticsRule(
-          {
-            type: "counter",
-            name: "test-rule",
-            params: {
-              source: {
-                // @ts-expect-error This should fail because the collection doesn't exist
-                collections: ["non-existing"],
-              },
-              destination: {
-                collection: "counter",
-              },
+        await analyticsRule({
+          type: "counter",
+          name: "test-rule",
+          params: {
+            source: {
+              // @ts-expect-error This should fail because the collection doesn't exist
+              collections: ["non-existing"],
+            },
+            destination: {
+              collection: "counter",
             },
           },
-          config,
-        );
+        }).create();
       }).rejects.toThrow("Collection `non-existing` is not found");
     });
 
     it("shouldn't create a rule with a non-existing destination collection", async () => {
       await expect(async () => {
-        await createAnalyticsRule(
-          {
-            type: "counter",
-            name: "test-rule",
-            params: {
-              source: {
-                collections: ["source"],
-                events: [
-                  {
-                    name: "click",
-                    type: "click",
-                    weight: 1,
-                  },
-                ],
-              },
-              destination: {
-                // @ts-expect-error This should fail because the collection doesn't exist
-                collection: "non-existing",
-              },
+        await analyticsRule({
+          type: "counter",
+          name: "test-rule",
+          params: {
+            source: {
+              collections: ["source"],
+              events: [
+                {
+                  name: "click",
+                  type: "click",
+                  weight: 1,
+                },
+              ],
+            },
+            destination: {
+              // @ts-expect-error This should fail because the collection doesn't exist
+              collection: "non-existing",
             },
           },
-          config,
-        );
+        }).create();
       }).rejects.toThrow("Collection `non-existing` not found.");
     });
 
     describe("counter rules", () => {
       it("shouldn't create  a counter  rule with no events", async () => {
         await expect(async () => {
-          await createAnalyticsRule(
-            // @ts-expect-error This should fail because the events are missing
-            {
-              type: "counter",
-              name: "test-rule",
-              params: {
-                source: {
-                  collections: ["source"],
-                },
-                destination: {
-                  collection: "source",
-                },
+          // @ts-expect-error This should fail because the events are missing
+          await analyticsRule({
+            type: "counter",
+            name: "test-rule",
+            params: {
+              source: {
+                collections: ["source"],
+              },
+              destination: {
+                collection: "source",
               },
             },
-            config,
-          );
+          }).create();
         }).rejects.toThrow("Bad or missing events");
       });
 
       it("shouldn't create a counter rule with bad events", async () => {
         await expect(async () => {
-          await createAnalyticsRule(
+          await analyticsRule(
             // @ts-expect-error This should fail because the event type is missing the weight
             {
               type: "counter",
@@ -369,42 +377,13 @@ describe("analytics rules", () => {
                 },
               },
             },
-            config,
-          );
+          ).create();
         }).rejects.toThrow("Counter events must contain a weight value.");
       });
 
       it("shouldn't create a counter rule with events types other than click or conversion", async () => {
         await expect(async () => {
-          await createAnalyticsRule(
-            {
-              name: "test-rule",
-              type: "counter",
-              params: {
-                destination: {
-                  collection: "counter",
-                  counter_field: "counter",
-                },
-                source: {
-                  collections: ["counter"],
-                  events: [
-                    // @ts-expect-error This should fail because the type is not click or conversion
-                    {
-                      name: "click",
-                      type: "search",
-                    },
-                  ],
-                },
-              },
-            },
-            config,
-          );
-        }).rejects.toThrow("Events must contain a unique name.");
-      });
-
-      it("should create a counter rule", async () => {
-        const rule = await createAnalyticsRule(
-          {
+          await analyticsRule({
             name: "test-rule",
             type: "counter",
             params: {
@@ -413,24 +392,46 @@ describe("analytics rules", () => {
                 counter_field: "counter",
               },
               source: {
-                collections: ["source"],
+                collections: ["counter"],
                 events: [
+                  // @ts-expect-error This should fail because the type is not click or conversion
                   {
-                    name: "product_click",
-                    type: "conversion",
-                    weight: 1,
-                  },
-                  {
-                    name: "product_conversion",
-                    type: "conversion",
-                    weight: 3,
+                    name: "click",
+                    type: "search",
                   },
                 ],
               },
             },
+          }).create();
+        }).rejects.toThrow("Events must contain a unique name.");
+      });
+
+      it("should create a counter rule", async () => {
+        const rule = await analyticsRule({
+          name: "test-rule",
+          type: "counter",
+          params: {
+            destination: {
+              collection: "counter",
+              counter_field: "counter",
+            },
+            source: {
+              collections: ["source"],
+              events: [
+                {
+                  name: "product_click",
+                  type: "conversion",
+                  weight: 1,
+                },
+                {
+                  name: "product_conversion",
+                  type: "conversion",
+                  weight: 3,
+                },
+              ],
+            },
           },
-          config,
-        );
+        }).create();
 
         expect(rule).toEqual({
           name: "test-rule",
@@ -465,49 +466,43 @@ describe("analytics rules", () => {
     describe("log rule", () => {
       it("shouldn't create a log rule with no events", async () => {
         await expect(async () => {
-          await createAnalyticsRule(
-            {
-              type: "log",
-              name: "test-rule",
-              // @ts-expect-error This should fail because the events are missing
-              params: {
-                source: {
-                  collections: ["source"],
-                },
+          await analyticsRule({
+            type: "log",
+            name: "test-rule",
+            // @ts-expect-error This should fail because the events are missing
+            params: {
+              source: {
+                collections: ["source"],
               },
             },
-            config,
-          );
+          }).create();
         }).rejects.toThrow("Bad or missing events");
       });
 
       it("should create a log rule", async () => {
-        const rule = await createAnalyticsRule(
-          {
-            name: "test-rule",
-            type: "log",
-            params: {
-              source: {
-                collections: ["source"],
-                events: [
-                  {
-                    name: "click",
-                    type: "click",
-                  },
-                  {
-                    name: "visit",
-                    type: "visit",
-                  },
-                  {
-                    name: "custom",
-                    type: "custom",
-                  },
-                ],
-              },
+        const rule = await analyticsRule({
+          name: "test-rule",
+          type: "log",
+          params: {
+            source: {
+              collections: ["source"],
+              events: [
+                {
+                  name: "click",
+                  type: "click",
+                },
+                {
+                  name: "visit",
+                  type: "visit",
+                },
+                {
+                  name: "custom",
+                  type: "custom",
+                },
+              ],
             },
           },
-          config,
-        );
+        }).create();
 
         expect(rule).toEqual({
           name: "test-rule",
@@ -537,36 +532,33 @@ describe("analytics rules", () => {
       });
 
       it("should create a log rule with a destination collection", async () => {
-        const result = await createAnalyticsRule(
-          {
-            type: "log",
-            name: "test-rule",
-            params: {
-              destination: {
-                collection: "counter",
-                counter_field: "counter",
-              },
-              source: {
-                collections: ["source"],
-                events: [
-                  {
-                    name: "click",
-                    type: "click",
-                  },
-                  {
-                    name: "visit",
-                    type: "visit",
-                  },
-                  {
-                    name: "custom",
-                    type: "custom",
-                  },
-                ],
-              },
+        const result = await analyticsRule({
+          type: "log",
+          name: "test-rule",
+          params: {
+            destination: {
+              collection: "counter",
+              counter_field: "counter",
+            },
+            source: {
+              collections: ["source"],
+              events: [
+                {
+                  name: "click",
+                  type: "click",
+                },
+                {
+                  name: "visit",
+                  type: "visit",
+                },
+                {
+                  name: "custom",
+                  type: "custom",
+                },
+              ],
             },
           },
-          config,
-        );
+        }).create();
 
         expect(result).toEqual({
           name: "test-rule",
@@ -603,38 +595,32 @@ describe("analytics rules", () => {
     describe("popular queries rule", () => {
       it("should not create a popular queries rule without a destination collection", async () => {
         await expect(async () => {
-          await createAnalyticsRule(
-            {
-              name: "test-rule",
-              type: "popular_queries",
-              // @ts-expect-error This should fail because the destination is missing
-              params: {
-                source: {
-                  collections: ["source", "counter"],
-                },
+          await analyticsRule({
+            name: "test-rule",
+            type: "popular_queries",
+            // @ts-expect-error This should fail because the destination is missing
+            params: {
+              source: {
+                collections: ["source", "counter"],
               },
             },
-            config,
-          );
+          }).create();
         }).rejects.toThrow("Bad or missing destination");
       });
 
       it("should create a popular queries rule", async () => {
-        const rule = await createAnalyticsRule(
-          {
-            name: "test-rule",
-            type: "popular_queries",
-            params: {
-              source: {
-                collections: ["source"],
-              },
-              destination: {
-                collection: "counter",
-              },
+        const rule = await analyticsRule({
+          name: "test-rule",
+          type: "popular_queries",
+          params: {
+            source: {
+              collections: ["source"],
+            },
+            destination: {
+              collection: "counter",
             },
           },
-          config,
-        );
+        }).create();
 
         expect(rule).toEqual({
           name: "test-rule",
@@ -653,22 +639,19 @@ describe("analytics rules", () => {
       });
 
       it("should create a popular queries rule with a counter field", async () => {
-        const rule = await createAnalyticsRule(
-          {
-            name: "test-rule",
-            type: "popular_queries",
-            params: {
-              source: {
-                collections: ["source"],
-              },
-              destination: {
-                collection: "counter",
-                counter_field: "counter",
-              },
+        const rule = await analyticsRule({
+          name: "test-rule",
+          type: "popular_queries",
+          params: {
+            source: {
+              collections: ["source"],
+            },
+            destination: {
+              collection: "counter",
+              counter_field: "counter",
             },
           },
-          config,
-        );
+        }).create();
 
         expect(rule).toEqual({
           name: "test-rule",
@@ -691,38 +674,32 @@ describe("analytics rules", () => {
     describe("no hits queries", () => {
       it("should not create a no-hits-queries rule without a destination collection", async () => {
         await expect(async () => {
-          await createAnalyticsRule(
-            {
-              name: "test-rule",
-              type: "nohits_queries",
-              // @ts-expect-error This should fail because the destination is missing
-              params: {
-                source: {
-                  collections: ["source", "counter"],
-                },
-              },
-            },
-            config,
-          );
-        }).rejects.toThrow("Bad or missing destination");
-      });
-
-      it("should create a no-hits-queries rule without a counter field", async () => {
-        const rule = await createAnalyticsRule(
-          {
+          await analyticsRule({
             name: "test-rule",
             type: "nohits_queries",
+            // @ts-expect-error This should fail because the destination is missing
             params: {
-              destination: {
-                collection: "counter",
-              },
               source: {
                 collections: ["source", "counter"],
               },
             },
+          }).create();
+        }).rejects.toThrow("Bad or missing destination");
+      });
+
+      it("should create a no-hits-queries rule without a counter field", async () => {
+        const rule = await analyticsRule({
+          name: "test-rule",
+          type: "nohits_queries",
+          params: {
+            destination: {
+              collection: "counter",
+            },
+            source: {
+              collections: ["source", "counter"],
+            },
           },
-          config,
-        );
+        }).create();
 
         await removeRule();
 
@@ -741,22 +718,19 @@ describe("analytics rules", () => {
       });
 
       it("should create a no-hits-queries rule with a counter field", async () => {
-        const rule = await createAnalyticsRule(
-          {
-            name: "test-rule",
-            type: "nohits_queries",
-            params: {
-              destination: {
-                collection: "counter",
-                counter_field: "counter",
-              },
-              source: {
-                collections: ["source", "counter"],
-              },
+        const rule = await analyticsRule({
+          name: "test-rule",
+          type: "nohits_queries",
+          params: {
+            destination: {
+              collection: "counter",
+              counter_field: "counter",
+            },
+            source: {
+              collections: ["source", "counter"],
             },
           },
-          config,
-        );
+        }).create();
 
         expect(rule).toEqual({
           name: "test-rule",
@@ -778,32 +752,29 @@ describe("analytics rules", () => {
 
     describe("upsert analytics rule", () => {
       it("should upsert a rule", async () => {
-        const rule = await upsertAnalyticsRule(
-          {
-            name: "test-rule",
-            type: "log",
-            params: {
-              source: {
-                collections: ["source"],
-                events: [
-                  {
-                    name: "click",
-                    type: "click",
-                  },
-                  {
-                    name: "visit",
-                    type: "visit",
-                  },
-                  {
-                    name: "custom",
-                    type: "custom",
-                  },
-                ],
-              },
+        const rule = await analyticsRule({
+          name: "test-rule",
+          type: "log",
+          params: {
+            source: {
+              collections: ["source"],
+              events: [
+                {
+                  name: "click",
+                  type: "click",
+                },
+                {
+                  name: "visit",
+                  type: "visit",
+                },
+                {
+                  name: "custom",
+                  type: "custom",
+                },
+              ],
             },
           },
-          config,
-        );
+        }).upsert();
 
         expect(rule).toEqual({
           name: "test-rule",
@@ -833,56 +804,50 @@ describe("analytics rules", () => {
       });
 
       it("should update a rule", async () => {
-        await createAnalyticsRule(
-          {
-            name: "test-rule",
-            type: "counter",
-            params: {
-              source: {
-                collections: ["source"],
-                events: [
-                  {
-                    name: "click",
-                    type: "click",
-                    weight: 1,
-                  },
-                ],
-              },
-              destination: {
-                collection: "source",
-                counter_field: "counter",
-              },
+        await analyticsRule({
+          name: "test-rule",
+          type: "counter",
+          params: {
+            source: {
+              collections: ["source"],
+              events: [
+                {
+                  name: "click",
+                  type: "click",
+                  weight: 1,
+                },
+              ],
+            },
+            destination: {
+              collection: "source",
+              counter_field: "counter",
             },
           },
-          config,
-        );
+        }).create();
 
-        const rule = await upsertAnalyticsRule(
-          {
-            name: "test-rule",
-            type: "log",
-            params: {
-              source: {
-                collections: ["source"],
-                events: [
-                  {
-                    name: "click",
-                    type: "click",
-                  },
-                  {
-                    name: "visit",
-                    type: "visit",
-                  },
-                  {
-                    name: "custom",
-                    type: "custom",
-                  },
-                ],
-              },
+        const rule = await analyticsRule({
+          name: "test-rule",
+          type: "log",
+          params: {
+            source: {
+              collections: ["source"],
+              events: [
+                {
+                  name: "click",
+                  type: "click",
+                },
+                {
+                  name: "visit",
+                  type: "visit",
+                },
+                {
+                  name: "custom",
+                  type: "custom",
+                },
+              ],
             },
           },
-          config,
-        );
+        }).upsert();
 
         expect(rule).toEqual({
           name: "test-rule",

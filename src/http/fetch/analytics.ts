@@ -1,96 +1,82 @@
 import type { AnalyticsEvent, ValidEventCombos } from "@/analytics/events";
 import type {
   AnalyticsRule,
-  AnalyticsRules
+  AnalyticsRuleOperations,
   Destinations,
   EventType,
   RuleTypes,
 } from "@/analytics/rules";
 import type { Configuration } from "@/config";
 
+import { getConfiguration } from "@/config";
 import { makeRequest } from "@/http/fetch/request";
 
-async function createEvent<Type extends ValidEventCombos["type"]>(
+async function sendEvent<Type extends ValidEventCombos["type"]>(
   event: AnalyticsEvent<Type>,
-  config: Configuration,
+  config?: Configuration,
 ): Promise<{ ok: boolean }> {
   return await makeRequest({
     body: event,
     endpoint: "/analytics/events",
-    config,
+    config: getConfiguration(config),
     method: "POST",
   });
 }
 
-async function createAnalyticsRule<
+function analyticsRule<
   const Name extends string,
   const Destination extends Destinations,
   const RuleType extends RuleTypes,
   const Events extends { name: string; type: EventType }[],
 >(
   rule: AnalyticsRule<Destination, RuleType, Events> & { name: Name },
-  config: Configuration,
-): Promise<AnalyticsRule<Destination, RuleType, Events> & { name: Name }> {
-  return makeRequest({
-    body: rule,
-    endpoint: "/analytics/rules",
-    config,
-    method: "POST",
-  });
-}
+): AnalyticsRuleOperations<Name, Destination, RuleType, Events> {
+  return {
+    rule,
 
-async function upsertAnalyticsRule<
-  const Name extends string,
-  const Destination extends Destinations,
-  const RuleType extends RuleTypes,
-  const Events extends { name: string; type: EventType }[],
->(
-  rule: AnalyticsRule<Destination, RuleType, Events> & { name: Name },
-  config: Configuration,
-): Promise<AnalyticsRule<Destination, RuleType, Events> & { name: Name }> {
-  return await makeRequest({
-    body: rule,
-    endpoint: `/analytics/rules/${rule.name}`,
-    config,
-    method: "PUT",
-  });
-}
+    retrieve: async (config?: Configuration) => {
+      return await makeRequest({
+        endpoint: `/analytics/rules/${rule.name}`,
+        config: getConfiguration(config),
+        method: "GET",
+      });
+    },
 
-async function retrieveAnalyticsRule<
-  Name extends GlobalAnalyticRules[keyof GlobalAnalyticRules]["name"],
->(name: Name, config: Configuration): Promise<AnalyticsRule & { name: Name }> {
-  return await makeRequest({
-    endpoint: `/analytics/rules/${encodeURI(name)}`,
-    config,
-    method: "GET",
-  });
+    create: async (config?: Configuration) => {
+      return await makeRequest({
+        body: rule,
+        endpoint: `/analytics/rules`,
+        config: getConfiguration(config),
+        method: "POST",
+      });
+    },
+
+    delete: async (config?: Configuration) => {
+      return await makeRequest({
+        endpoint: `/analytics/rules/${rule.name}`,
+        config: getConfiguration(config),
+        method: "DELETE",
+      });
+    },
+
+    upsert: async (config?: Configuration) => {
+      return await makeRequest({
+        endpoint: `/analytics/rules/${rule.name}`,
+        config: getConfiguration(config),
+        method: "PUT",
+        body: rule,
+      });
+    },
+  };
 }
 
 async function retrieveAllAnalyticsRules(
-  config: Configuration,
+  config?: Configuration,
 ): Promise<{ rules: AnalyticsRule & { name: string }[] }> {
   return await makeRequest({
     endpoint: "/analytics/rules",
-    config,
+    config: getConfiguration(config),
     method: "GET",
   });
 }
-
-async function deleteAnalyticsRule<
-  Name extends GlobalAnalyticRules[keyof GlobalAnalyticRules]["name"],
->(name: Name, config: Configuration): Promise<{ name: Name }> {
-  return await makeRequest({
-    endpoint: `/analytics/rules/${encodeURIComponent(name)}`,
-    config,
-    method: "DELETE",
-  });
-}
-
-export {
-  createEvent,
-  upsertAnalyticsRule,
-  createAnalyticsRule,
-  retrieveAnalyticsRule,
-  retrieveAllAnalyticsRules,
-  deleteAnalyticsRule,
-};
+export { sendEvent, retrieveAllAnalyticsRules, analyticsRule };

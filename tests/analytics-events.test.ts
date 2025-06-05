@@ -1,11 +1,6 @@
-import { analyticsRule } from "@/analytics/rules";
 import { collection } from "@/collection/base";
-import { configure } from "@/config";
-import {
-  createAnalyticsRule,
-  createEvent,
-  deleteAnalyticsRule,
-} from "@/http/fetch/analytics";
+import { setDefaultConfiguration } from "@/config";
+import { analyticsRule, sendEvent } from "@/http/fetch/analytics";
 import { upAll } from "docker-compose";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -68,16 +63,16 @@ declare module "@/analytics/rules" {
     counter: typeof counterRule.rule;
   }
 }
-const config = configure({
-  apiKey: "xyz",
-  nodes: [{ url: "http://localhost:8108" }],
-});
 
 beforeAll(async () => {
   if (!isCi) {
     await upAll({ cwd: __dirname, log: true });
   }
 
+  setDefaultConfiguration({
+    apiKey: "xyz",
+    nodes: [{ url: "http://localhost:8108" }],
+  });
   const event_counter = await fetch("http://localhost:8108/collections", {
     method: "POST",
     headers: {
@@ -99,7 +94,7 @@ beforeAll(async () => {
 
   expect(event_counter.ok).toBe(true);
 
-  await expect(createAnalyticsRule(counterRule, config)).resolves.toBeTruthy();
+  await expect(counterRule.create()).resolves.toBeTruthy();
 });
 
 afterAll(async () => {
@@ -118,63 +113,52 @@ afterAll(async () => {
       "X-TYPESENSE-API-KEY": "xyz",
     },
   });
-  await expect(
-    deleteAnalyticsRule("counter-rule", config),
-  ).resolves.toBeTruthy();
+  await expect(counterRule.delete()).resolves.toBeTruthy();
 });
 
 describe("analytics events", () => {
   describe("createAnalyticsEvent", () => {
     it("shouldn't create an event for a non-existing name", async () => {
       await expect(
-        createEvent(
-          {
-            // @ts-expect-error - invalid event name
-            name: "non-existing-event",
-            type: "conversion",
-            data: {
-              doc_id: "123",
-              user_id: "456",
-            },
+        sendEvent({
+          // @ts-expect-error - invalid event name
+          name: "non-existing-event",
+          type: "conversion",
+          data: {
+            doc_id: "123",
+            user_id: "456",
           },
-          config,
-        ),
+        }),
       ).rejects.toThrow(
         "No analytics rule defined for event name non-existing-event",
       );
     });
     it("shouldn't create an event for a mismatched name-type", async () => {
       await expect(
-        createEvent(
-          {
-            name: "event_conversion",
-            // @ts-expect-error - invalid event type
-            type: "click",
-            data: {
-              doc_id: "123",
-              user_id: "456",
-              q: "test",
-            },
-          },
-          config,
-        ),
-      ).rejects.toThrow("event_type mismatch in analytic rules.");
-    });
-  });
-  it("should create an event for a valid name-type", async () => {
-    await expect(
-      createEvent(
-        {
+        sendEvent({
           name: "event_conversion",
-          type: "conversion",
+          // @ts-expect-error - invalid event type
+          type: "click",
           data: {
             doc_id: "123",
             user_id: "456",
             q: "test",
           },
+        }),
+      ).rejects.toThrow("event_type mismatch in analytic rules.");
+    });
+  });
+  it("should create an event for a valid name-type", async () => {
+    await expect(
+      sendEvent({
+        name: "event_conversion",
+        type: "conversion",
+        data: {
+          doc_id: "123",
+          user_id: "456",
+          q: "test",
         },
-        config,
-      ),
+      }),
     ).resolves.toMatchObject({ ok: true });
   });
 });
