@@ -13,6 +13,10 @@ type OmitDefaultSortingField<T> = Omit<T, "default_sorting_field">;
  */
 type Recurse<T> = T extends infer R ? R : never;
 
+type Prettify<T> = {
+  [K in keyof T]: Prettify<T[K]>;
+} & {};
+
 type ExcludeFromTuple<T extends unknown[], U extends unknown[]> =
   T extends [infer F, ...infer R] ?
     F extends U[number] ?
@@ -55,6 +59,7 @@ export type {
   RemoveType,
   TupleIncludes,
   DeepPartial,
+  Prettify,
 };
 
 export { sleep };

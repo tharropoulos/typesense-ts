@@ -1,6 +1,7 @@
 import type {
   ExcludeFromTuple,
   OmitDefaultSortingField,
+  Prettify,
   RemoveType,
 } from "@/lib/utils";
 
@@ -783,16 +784,18 @@ type InferNestedStructure<
  * //   }
  *
  */
-type InferNativeType<Fields extends CollectionField[]> = UnionToIntersection<
-  Fields[number] extends infer Field ?
-    Field extends CollectionField ?
-      Field["type"] extends "object" ?
-        HasChildren<Fields, Field["name"]> extends never ?
-          InferNestedStructure<Fields, Field["name"]>
-        : never
-      : InferNestedStructure<Fields, Field["name"]>
+type InferNativeType<Fields extends CollectionField[]> = Prettify<
+  UnionToIntersection<
+    Fields[number] extends infer Field ?
+      Field extends CollectionField ?
+        Field["type"] extends "object" ?
+          HasChildren<Fields, Field["name"]> extends never ?
+            InferNestedStructure<Fields, Field["name"]>
+          : never
+        : InferNestedStructure<Fields, Field["name"]>
+      : never
     : never
-  : never
+  >
 >;
 
 /**
