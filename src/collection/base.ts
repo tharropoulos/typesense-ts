@@ -56,7 +56,17 @@ interface FieldTypeToNativeTypeMap {
   "int64[]": number[];
   "float[]": number[];
   "bool[]": boolean[];
-  auto: unknown;
+  auto:
+    | string
+    | number
+    | boolean
+    | [number, number]
+    | string[]
+    | number[]
+    | boolean[]
+    | [number, number][]
+    | DocumentSchema
+    | DocumentSchema[];
   "string*": string;
   image: string;
   object: DocumentSchema;
