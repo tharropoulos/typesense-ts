@@ -1,278 +1,332 @@
-# typesense-ts
+<div align="center">
+  <h1>typesense-ts 🔍</h1>
+</div>
 
-An unofficial, fully type-safe Typesense client for Node.js written in TypeScript.
+&nbsp;
 
+A fully type-safe, **unofficial** Typesense client for Node.js written in TypeScript that provides compile-time validation on almost every parameter.
+
+**Note**: Although I maintain both this library and the [main](https://github.com/typesense/typesense-js) client, this library is unofficial and a passion project. For official support, please refer to the [Typesense documentation](https://typesense.org/docs/).
 
 ## Features
 
-- **Fully Type-Safe**: Leverage TypeScript's type system for safer API interactions
-- **Advanced Type Inference**: Collection schemas, search parameters, and responses are strongly typed
-- **Built-in Type Validation**: Validate filter queries, sort expressions, and more at compile-time
-- **Comprehensive API Coverage**:
-  - Collections management
-  - Document operations
-  - Search and multi-search
-  - Faceting and grouping
-  - Aliases
-  - Analytics rules and events
-- **High-Performance**: Efficient request handling with automatic node failover
-- **Modern**: Built with ESM and the latest TypeScript features
+- **🔒 Fully Type-Safe**: Leverage TypeScript's type system for safer API interactions with compile-time validation
+- **🧠 Advanced Type Inference**: Collection schemas, search parameters, and responses are strongly typed
+- **✅ Built-in Validation**: Validate filter queries, sort expressions, and field configurations at compile-time
+- **🎯 Roadmap**:
+  - ~~Collections management (create, update, delete, retrieve)~~ ✅ **Done!**
+  - ~~Document operations (CRUD, bulk import)~~ ✅ **Done!**
+  - ~~Search and multi-search with full parameter validation~~ ✅ **Done!**
+  - ~~Faceting, grouping~~ ✅ **Done!**
+  - ~~Aliases~~ ✅ **Done!**
+  - ~~Curation & Overrides~~ ✅ **Done!**
+  - ~~Stopwords~~ ✅ **Done!**
+  - ~~Analytics~~ ✅ **Done!**
+  - Document exporting
+  - Conversational Search
+  - Api Key Management
+  - Synonyms
+- **⚡ Hassle-Free**: Efficient request handling with automatic node failover and health checking
 
 ## Installation
 
-I've not yet published this library to npm, but you can install it directly from the GitHub repository.
-I'm planning to do so soon. The name is up for discussion, so if you have any suggestions, please let me know.
+```bash
+# Using npm
+npm install typesense-ts@latest
 
-## Usage
+# Using pnpm
+pnpm add typesense-ts@latest
 
-### Configuring the Client
+# Using yarn
+yarn add typesense-ts@latest
+```
+
+## Quick Start
+
+### 1. Configure the Client
 
 ```typescript
-import { configure } from 'typesense-ts';
+import { configure, setDefaultConfiguration } from "typesense-ts";
 
-const config = configure({
+// Configure and set as default
+setDefaultConfiguration({
   apiKey: "xyz",
   nodes: [
     { url: "http://localhost:8108" },
     // Or specify host/port/protocol separately:
-    { host: "example.com", port: 8108, protocol: "https", path: "/typesense" }
+    { host: "example.com", port: 8108, protocol: "https", path: "/typesense" },
   ],
   // Optional parameters
   retryIntervalSeconds: 2,
   numRetries: 3,
   healthcheckIntervalSeconds: 30,
-  additionalHeaders: { "Custom-Header": "value" }
+  additionalHeaders: { "Custom-Header": "value" },
 });
 ```
 
-### Defining Collections
+### 2. Define a Collection Schema
 
 ```typescript
-import { collection } from 'typesense-ts';
+import { collection } from "typesense-ts";
 
-// Define a collection schema
+// Define a type-safe collection schema
 const booksSchema = collection({
-  name: 'books',
+  name: "books",
   fields: [
-    { name: 'title', type: 'string' },
-    { name: 'authors', type: 'string[]' },
-    { name: 'publication_year', type: 'int32', sort: true },
-    { name: 'ratings_count', type: 'int32', facet: true },
-    { name: 'average_rating', type: 'float', facet: true },
-    { name: 'categories', type: 'string[]', facet: true }
+    { name: "title", type: "string" },
+    { name: "authors", type: "string[]" },
+    { name: "publication_year", type: "int32", sort: true },
+    { name: "ratings_count", type: "int32", facet: true },
+    { name: "average_rating", type: "float", facet: true },
+    { name: "categories", type: "string[]", facet: true },
   ],
-  default_sorting_field: 'publication_year'
+  default_sorting_field: "publication_year",
 });
 
-// Register your collection for type safety
-declare module 'typesense-ts' {
-  interface GlobalCollections {
-    books: typeof booksSchema;
+// Register the collection globally for type safety
+declare module "typesense-ts" {
+  interface Collections {
+    books: typeof booksSchema.schema;
   }
 }
-
-// Create the collection
-import { createCollection } from 'typesense-ts';
-await createCollection(booksSchema, config);
 ```
 
-### Searching Documents
+### 3. Create the Collection
 
 ```typescript
-import { search } from 'typesense-ts';
+// Create the collection in Typesense
+await booksSchema.create();
+```
 
-// Type-safe search with autocomplete and validation
-const searchResults = await search(
-  'books',
-  {
-    q: 'harry potter',
-    query_by: ['title', 'authors', 'categories'],
-    sort_by: 'average_rating:desc',
-    filter_by: 'publication_year:>=2000 && average_rating:>=4',
-    facet_by: ['categories', 'average_rating'],
-    group_by: ['categories'],
-    page: 1,
-    per_page: 10,
-    highlight_fields: ['title', 'authors']
-  },
-  config
-);
+### 4. Perform Type-Safe Search
+
+```typescript
+// Type-safe search with full autocomplete and validation
+const searchResults = await booksSchema.search({
+  q: "harry potter",
+  query_by: ["title", "authors", "categories"], // ✅ Fully typed field names
+  sort_by: "average_rating:desc", // ✅ Compile-time sort validation
+  filter_by: "publication_year:>=2000 && average_rating:>=4", // ✅ Filter validation
+  facet_by: ["categories", "average_rating"], // ✅ Only facetable fields allowed
+  group_by: ["categories"], // ✅ Only facetable fields allowed
+  page: 1,
+  per_page: 10,
+  highlight_fields: ["title", "authors"], // ✅ Only searchable fields allowed
+});
 
 // Access strongly-typed results
-searchResults.hits.forEach(hit => {
-  console.log(hit.document.title);  // Typed as string
-  console.log(hit.document.publication_year); // Typed as number
-  console.log(hit.highlight.title); // Access highlighted snippets
+searchResults.hits.forEach((hit) => {
+  console.log(hit.document.title); // ✅ Typed as string
+  console.log(hit.document.publication_year); // ✅ Typed as number
+  console.log(hit.highlight.title); // ✅ Access highlighted snippets
 });
 ```
 
-### Multi-Search
+## Advanced Usage
+
+### Multi-Search Operations
 
 ```typescript
-import { multisearch, multisearchEntry } from 'typesense-ts';
+import { multisearch, multisearchEntry } from "typesense-ts";
 
-const { results } = await multisearch(
-  {
-    searches: [
-      multisearchEntry({
-        collection: 'books',
-        q: 'harry',
-        query_by: ['title', 'authors'],
-        filter_by: 'average_rating:>=4',
-      }),
-      multisearchEntry({
-        collection: 'books',
-        q: 'potter',
-        query_by: ['title', 'authors'],
-        filter_by: 'average_rating:>=4.5',
-      })
-    ]
-  },
-  config
-);
+const { results } = await multisearch({
+  searches: [
+    multisearchEntry({
+      collection: "books",
+      q: "harry",
+      query_by: ["title", "authors"],
+      filter_by: "average_rating:>=4",
+    }),
+    multisearchEntry({
+      collection: "books",
+      q: "potter",
+      query_by: ["title", "authors"],
+      filter_by: "average_rating:>=4.5",
+    }),
+  ],
+});
 
-// Access the first result set
-const firstResults = results[0];
+// Each result is fully typed based on its collection schema
+const firstResults = results[0]; // ✅ Type-safe access
 ```
 
-### Working with Collections
+### Document Operations
 
 ```typescript
-import { 
-  retrieveCollection, 
-  retrieveAllCollections,
-  updateCollection,
-  deleteCollection 
-} from 'typesense-ts';
-import { validateCollectionUpdate } from 'typesense-ts';
+// Create documents with type safety
+await booksSchema.documents.create({
+  title: "The TypeScript Handbook",
+  authors: ["Microsoft Team"],
+  publication_year: 2023,
+  ratings_count: 1250,
+  average_rating: 4.8,
+  categories: ["Programming", "Web Development"],
+});
 
-// Retrieve a collection
-const collection = await retrieveCollection('books', config);
+// Bulk import with error handling
+try {
+  const results = await booksSchema.documents.import(
+    [
+      {
+        title: "Book 1",
+        authors: ["Author 1"],
+        publication_year: 2023,
+        ratings_count: 100,
+        average_rating: 4.5,
+        categories: ["Fiction"],
+      },
+      {
+        title: "Book 2",
+        authors: ["Author 2"],
+        publication_year: 2024,
+        ratings_count: 200,
+        average_rating: 4.2,
+        categories: ["Non-Fiction"],
+      },
+    ],
+    { return_doc: true },
+  );
 
-// Retrieve all collections
-const collections = await retrieveAllCollections(config);
+  console.log(`Imported ${results.length} documents`);
+} catch (error) {
+  if (error.name === "DocumentImportError") {
+    console.log(`Failed documents:`, error.failedDocuments);
+  }
+}
+```
 
-// Update a collection
-const updateFields = validateCollectionUpdate(booksSchema, {
+### Collection Management
+
+```typescript
+// Update collection schema
+import { validateCollectionUpdate } from "typesense-ts";
+
+const updateFields = validateCollectionUpdate(booksSchema.schema, {
   fields: [
-    { name: 'publisher', type: 'string' },
+    { name: "publisher", type: "string" },
     // To drop a field:
-    // { name: 'existing_field', drop: true }
-  ]
+    { name: "old_field", drop: true },
+  ],
 });
-await updateCollection(updateFields, config);
+await booksSchema.update(updateFields);
 
-// Delete a collection
-await deleteCollection('books', config);
+// Retrieve collection info
+const collectionInfo = await booksSchema.retrieve();
+console.log(`Collection has ${collectionInfo.num_documents} documents`);
 ```
 
-### Working with Aliases
+### Aliases and Overrides
 
 ```typescript
-import { alias, upsertAlias, retrieveAlias, deleteAlias } from 'typesense-ts';
+import { alias, override } from "typesense-ts";
 
-// Define an alias
+// Create an alias
 const booksAlias = alias({
-  name: 'top_books',
-  collection_name: 'books'
+  name: "popular_books",
+  collection_name: "books",
 });
+await booksAlias.upsert();
 
-// Register for type safety
-declare module 'typesense-ts' {
-  interface GlobalAliases {
-    topBooks: typeof booksAlias;
-  }
-}
-
-// Create or update an alias
-await upsertAlias(booksAlias, config);
-
-// Retrieve an alias
-const retrievedAlias = await retrieveAlias('top_books', config);
-
-// Delete an alias
-await deleteAlias('top_books', config);
+// Create search overrides
+const topBooksOverride = override("featured_books", {
+  collection: "books",
+  rule: { query: "bestseller", match: "exact" },
+  includes: [{ id: "book_123", position: 1 }],
+  remove_matched_tokens: false,
+});
+await topBooksOverride.upsert();
 ```
 
-### Analytics
+### Analytics and Stopwords
 
 ```typescript
-import { analyticsRule, createAnalyticsRule, createEvent } from 'typesense-ts';
+import { analyticsRule, stopword } from "typesense-ts";
 
-// Define an analytics rule
+// Create analytics rules
 const popularQueriesRule = analyticsRule({
-  name: 'popular_searches',
-  type: 'popular_queries',
+  name: "popular_searches",
+  type: "popular_queries",
   params: {
-    source: {
-      collections: ['books']
-    },
-    destination: {
-      collection: 'popular_queries'
-    }
-  }
-});
-
-// Register for type safety
-declare module 'typesense-ts' {
-  interface GlobalAnalyticRules {
-    popularQueries: typeof popularQueriesRule;
-  }
-}
-
-// Create the rule
-await createAnalyticsRule(popularQueriesRule, config);
-
-// Create an analytics event
-await createEvent(
-  {
-    name: 'click_event',
-    type: 'click',
-    data: {
-      user_id: 'user123',
-      doc_id: 'book456',
-      q: 'harry potter'
-    }
+    source: { collections: ["books"] },
+    destination: { collection: "analytics" },
   },
-  config
-);
+});
+await popularQueriesRule.upsert();
+
+// Manage stopwords
+const commonStopwords = stopword("english_stopwords", {
+  stopwords: ["the", "and", "or", "but"],
+  locale: "en",
+});
+await commonStopwords.upsert();
 ```
 
-## Advanced Features
+## Configuration Options
 
-### Compile-Time Type Validation
-
-The library performs validation at compile time for:
-
-- Filter expressions
-- Sort expressions
-- Collection configuration
-- Search parameters compatibility
-- Required fields checking
-- Type compatibility for all operations
-
-This helps catch errors before runtime and provides excellent IDE autocomplete support.
-
-### Automatic Node Failover
-
-The client automatically handles node failover:
+### Node Configuration
 
 ```typescript
 const config = configure({
-  apiKey: "xyz",
+  apiKey: "your-api-key",
   nodes: [
     { url: "http://node1:8108" },
-    { url: "http://node2:8108" },
-    { url: "http://node3:8108" }
+    { host: "node2.example.com", port: 8108, protocol: "https" },
   ],
-  // Optional nearest node for geo-distributed setups
-  nearestNode: { url: "http://nearest:8108" }
+  nearestNode: { url: "http://nearest:8108" }, // Optional for geo-distributed setups
+  numRetries: 5, // Number of retries (default: nodes.length + 1)
+  retryIntervalSeconds: 2, // Delay between retries (default: 1)
+  healthcheckIntervalSeconds: 60, // Health check interval (default: 60)
+  connectionTimeoutSeconds: 10, // Connection timeout (default: system)
+  timeoutSeconds: 30, // Request timeout (default: system)
+  additionalHeaders: {
+    // Custom headers
+    Authorization: "Bearer token",
+  },
 });
 ```
 
-- Automatically retries failed requests on different nodes
-- Prioritizes healthy nodes and nearest node
-- Performs periodic health checks
+### Advanced Schema Features
+
+```typescript
+// Embedding fields for vector search
+const articlesSchema = collection({
+  name: "articles",
+  fields: [
+    { name: "title", type: "string" },
+    { name: "content", type: "string" },
+    {
+      name: "title_embedding",
+      type: "float[]",
+      embed: {
+        from: ["title"],
+        model_config: { model_name: "ts/e5-small" },
+      },
+    },
+  ],
+});
+
+// Nested objects
+const usersSchema = collection({
+  name: "users",
+  fields: [
+    { name: "name", type: "string" },
+    { name: "profile", type: "object" },
+    { name: "profile.age", type: "int32" },
+    { name: "profile.location", type: "geopoint" },
+  ],
+  enable_nested_fields: true,
+});
+
+// Reference fields for JOINs
+const ordersSchema = collection({
+  name: "orders",
+  fields: [
+    { name: "order_id", type: "string" },
+    { name: "user_id", type: "string", reference: "users.id" },
+    { name: "total", type: "float" },
+  ],
+});
+```
 
 ## Development
 
@@ -280,7 +334,7 @@ const config = configure({
 
 - Node.js 18+
 - pnpm 8+
-- Docker (for running tests)
+- Docker (for running tests with Typesense instance)
 
 ### Setup
 
@@ -292,32 +346,110 @@ cd typesense-ts
 # Install dependencies
 pnpm install
 
-# Start Typesense using Docker
+# Start Typesense for development
 docker-compose up -d
+```
+
+### Available Scripts
+
+```bash
+# Build the library
+pnpm build
+
+# Run tests
+pnpm test
+
+# Run tests with coverage
+pnpm test --coverage
+
+# Type checking
+pnpm type-check
+
+# Linting
+pnpm lint
+
+# Format code
+pnpm format
+
+# Development mode with watch
+pnpm dev
 ```
 
 ### Testing
 
+The test suite includes integration tests that run against a real Typesense instance:
+
 ```bash
-# Run all tests
+# Run all tests (starts Typesense automatically)
 pnpm test
 
-# Run specific tests
-pnpm test -- path/to/test-file.test.ts
+# Run specific test file
+pnpm test tests/search.test.ts
+
+# Run tests in CI mode (skips Docker setup)
+CI=true pnpm test
 ```
 
-### Type Checking
+### Project Structure
+
+```
+src/
+├── collection/          # Collection schema and operations
+├── document/           # Document CRUD operations
+├── analytics/          # Analytics rules and events
+├── lexer/             # Type-level parsers for filters, sorts, etc.
+├── http/              # HTTP client and request handling
+├── config/            # Configuration management
+└── index.ts          # Main exports
+
+tests/                 # Test suite
+docker-compose.yml    # Typesense development instance
+tsup.config.ts       # Build configuration
+```
+
+## Contributing
+
+We welcome contributions! Please follow these guidelines:
+
+1. **Fork the repository** and create a feature branch
+2. **Write tests** for new functionality
+3. **Follow TypeScript best practices** and maintain type safety
+4. **Run the full test suite** before submitting
+5. **Update documentation** for new features
+
+### Development Workflow
 
 ```bash
+# Create a feature branch
+git checkout -b feature/amazing-feature
+
+# Make your changes and add tests
+# ...
+
+# Run tests and type checking
+pnpm test
 pnpm type-check
-```
-
-### Linting
-
-```bash
 pnpm lint
+
+# Commit your changes
+git commit -m "Add amazing feature"
+
+# Push and create a pull request
+git push origin feature/amazing-feature
 ```
+
+### Code Style
+
+- Enforce type-level programming for validation
+- Write tests for new features
+- Follow the existing code organization patterns
+
+## License
+
+This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgements
 
-- [Typesense](https://typesense.org/) - The search engine this client is built for
+- **[Typesense](https://typesense.org/)** - The amazing search engine this client is built for
+- **TypeScript Team** - For the powerful type system that makes this library possible
+- **Contributors** - Thank you to everyone who helps improve this library
