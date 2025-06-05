@@ -69,10 +69,23 @@ const _unregisteredSchema = collection({
   fields: [{ type: "string", optional: false, name: "id" }],
 });
 
+const _testSchema = collection({
+  name: "testFields",
+  fields: [
+    { type: "string", optional: false, name: "id" },
+    { type: "string", optional: false, name: "indexedField" },
+    { type: "string", optional: false, name: "nonIndexedField", index: false },
+    { type: "string", optional: false, name: "nonStoredField", store: false },
+    { type: "int32", optional: false, name: "numberField" },
+    { type: "int32", optional: false, name: "nonIndexedNumber", index: false },
+  ],
+});
+
 declare module "@/collection/base" {
   interface Collections {
     posts: typeof _postsSchema;
     comments: typeof _commentSchema;
+    testFields: typeof _testSchema;
   }
 }
 
@@ -923,5 +936,52 @@ describe("ParseFilter tests", () => {
     expectTypeOf<
       ParseFilter<"age != 20", typeof _usersSchema>
     >().toEqualTypeOf<"Unknown token: !">();
+  });
+});
+
+describe("Field filterability tests", () => {
+  it("should allow filtering on indexed fields", () => {
+    expectTypeOf<
+      ParseFilter<"indexedField := `test`", typeof _testSchema>
+    >().toEqualTypeOf<true>();
+  });
+
+  it("should allow filtering on stored fields by default", () => {
+    expectTypeOf<
+      ParseFilter<"numberField := 42", typeof _testSchema>
+    >().toEqualTypeOf<true>();
+  });
+
+  it("should reject filtering on fields with index: false", () => {
+    expectTypeOf<
+      ParseFilter<"nonIndexedField := `test`", typeof _testSchema>
+    >().toEqualTypeOf<"Field `nonIndexedField` cannot be filtered (index: false or store: false)">();
+  });
+
+  it("should reject filtering on fields with store: false", () => {
+    expectTypeOf<
+      ParseFilter<"nonStoredField := `test`", typeof _testSchema>
+    >().toEqualTypeOf<"Field `nonStoredField` cannot be filtered (index: false or store: false)">();
+  });
+
+  it("should reject filtering on numeric fields with index: false", () => {
+    expectTypeOf<
+      ParseFilter<"nonIndexedNumber := 42", typeof _testSchema>
+    >().toEqualTypeOf<"Field `nonIndexedNumber` cannot be filtered (index: false or store: false)">();
+  });
+
+  it("should reject filtering in complex expressions with non-filterable fields", () => {
+    expectTypeOf<
+      ParseFilter<
+        "(indexedField := `test`) && (nonIndexedField := `value`)",
+        typeof _testSchema
+      >
+    >().toEqualTypeOf<"Field `nonIndexedField` cannot be filtered (index: false or store: false)">();
+  });
+
+  it("should reject filtering in array operations with non-filterable fields", () => {
+    expectTypeOf<
+      ParseFilter<"nonIndexedField:[`test1`, `test2`]", typeof _testSchema>
+    >().toEqualTypeOf<"Field `nonIndexedField` cannot be filtered (index: false or store: false)">();
   });
 });

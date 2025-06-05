@@ -338,6 +338,15 @@ type IsValidValue<
     : `Literal Token \`${TCurrent["value"]}`}\` followed by ${GetFilterTokenType<TNext[0]>}`;
 
 /**
+ * Checks if a field is filterable (doesn't have index: false or store: false).
+ * @template TField - The field to check.
+ */
+type IsFieldFilterable<TField extends CollectionField> =
+  TField extends { index: false } ? false
+  : TField extends { store: false } ? false
+  : true;
+
+/**
  * Checks if the next token after an identifier is a valid identifier.
  * @template CurrentToken - The identifier to check.
  * @template Fields - The fields of the collection schema.
@@ -348,10 +357,17 @@ type IsValidFilterIdentifier<
   Fields extends CollectionField[],
   NextToken extends FilterToken[],
 > =
-  NextToken[0] extends ValidNextTokenMap<Fields>[CurrentToken["name"]] ? true
-  : `Invalid token sequence: identifier with name \`${CurrentToken["name"]}\` followed by ${GetFilterTokenType<
-      NextToken[0]
-    >}`;
+  Extract<Fields[number], { name: CurrentToken["name"] }> extends infer TField ?
+    TField extends CollectionField ?
+      IsFieldFilterable<TField> extends false ?
+        `Field \`${CurrentToken["name"]}\` cannot be filtered (index: false or store: false)`
+      : NextToken[0] extends ValidNextTokenMap<Fields>[CurrentToken["name"]] ?
+        true
+      : `Invalid token sequence: identifier with name \`${CurrentToken["name"]}\` followed by ${GetFilterTokenType<
+          NextToken[0]
+        >}`
+    : `Field \`${CurrentToken["name"]}\` not found`
+  : `Field \`${CurrentToken["name"]}\` not found`;
 
 /**
  * Checks if the next token after an operator is a valid operator.
