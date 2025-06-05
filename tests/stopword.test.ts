@@ -66,7 +66,6 @@ beforeAll(async () => {
     body: JSON.stringify(stopwordCollection.schema),
   });
 
-  console.log(await collection.json());
   expect(collection.ok).toBe(true);
 
   const documents = [
