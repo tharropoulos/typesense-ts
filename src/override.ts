@@ -1,3 +1,4 @@
+import type { Aliases } from "@/alias";
 import type { Collections, GetSchemaFromName } from "@/collection";
 import type { Configuration } from "@/config";
 import type { ParseFilter } from "@/lexer/filter";
@@ -10,8 +11,16 @@ interface Query {
 }
 
 type OverrideCreate<
-  CollectionName extends Collections[keyof Collections]["name"],
-  Schema extends OmitDefaultSortingField<GetSchemaFromName<CollectionName>>,
+  CollectionName extends
+    | Collections[keyof Collections]["name"]
+    | Aliases[keyof Aliases]["name"],
+  Schema extends OmitDefaultSortingField<
+    GetSchemaFromName<
+      CollectionName extends Aliases[keyof Aliases]["name"] ?
+        Aliases[keyof Aliases]["collection_name"]
+      : CollectionName
+    >
+  >,
   FilterBy extends string,
   SortBy extends string,
   Tags extends readonly string[],
@@ -38,8 +47,16 @@ type OverrideCreate<
 
 type Override<
   OverrideName extends string,
-  CollectionName extends Collections[keyof Collections]["name"],
-  Schema extends OmitDefaultSortingField<GetSchemaFromName<CollectionName>>,
+  CollectionName extends
+    | Collections[keyof Collections]["name"]
+    | Aliases[keyof Aliases]["name"],
+  Schema extends OmitDefaultSortingField<
+    GetSchemaFromName<
+      CollectionName extends Aliases[keyof Aliases]["name"] ?
+        Aliases[keyof Aliases]["collection_name"]
+      : CollectionName
+    >
+  >,
   FilterBy extends string,
   SortBy extends string,
   Tags extends readonly string[],
@@ -54,8 +71,16 @@ type Override<
 
 interface OverrideOperations<
   OverrideName extends string,
-  CollectionName extends Collections[keyof Collections]["name"],
-  Schema extends OmitDefaultSortingField<GetSchemaFromName<CollectionName>>,
+  CollectionName extends
+    | Collections[keyof Collections]["name"]
+    | Aliases[keyof Aliases]["name"],
+  Schema extends OmitDefaultSortingField<
+    GetSchemaFromName<
+      CollectionName extends Aliases[keyof Aliases]["name"] ?
+        Aliases[keyof Aliases]["collection_name"]
+      : CollectionName
+    >
+  >,
   FilterBy extends string,
   SortBy extends string,
   Tags extends readonly string[],

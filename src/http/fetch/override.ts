@@ -1,3 +1,4 @@
+import type { Aliases } from "@/alias";
 import type { Collections, GetSchemaFromName } from "@/collection";
 import type { Configuration } from "@/config";
 import type { OmitDefaultSortingField } from "@/lib/utils";
@@ -7,11 +8,19 @@ import { getConfiguration } from "@/config";
 import { makeRequest } from "@/http/fetch/request";
 
 interface OverrideResponse<
-  CollectionName extends Collections[keyof Collections]["name"],
+  CollectionName extends
+    | Collections[keyof Collections]["name"]
+    | Aliases[keyof Aliases]["name"],
 > extends Override<
     string,
     CollectionName,
-    OmitDefaultSortingField<GetSchemaFromName<CollectionName>>,
+    OmitDefaultSortingField<
+      GetSchemaFromName<
+        CollectionName extends Aliases[keyof Aliases]["name"] ?
+          Aliases[keyof Aliases]["collection_name"]
+        : CollectionName
+      >
+    >,
     string,
     string,
     string[]
@@ -42,9 +51,15 @@ async function retrieveAllOverrides<
  */
 function override<
   const OverrideName extends string,
-  const CollectionName extends Collections[keyof Collections]["name"],
+  const CollectionName extends
+    | Collections[keyof Collections]["name"]
+    | Aliases[keyof Aliases]["name"],
   const Schema extends OmitDefaultSortingField<
-    GetSchemaFromName<CollectionName>
+    GetSchemaFromName<
+      CollectionName extends Aliases[keyof Aliases]["name"] ?
+        Aliases[keyof Aliases]["collection_name"]
+      : CollectionName
+    >
   >,
   const FilterBy extends string,
   const SortBy extends string,
