@@ -18,9 +18,13 @@ export {
 } from "./config";
 
 export type * from "./config";
-export type { Collections, InferNativeType } from "./collection";
-export type { Aliases } from "./alias";
-export type { Overrides } from "./override";
-export type { Stopwords } from "./stopword";
-export type { AnalyticsRules } from "./analytics/rules";
+export type {
+  Collections,
+  InferNativeType,
+  CollectionOperations,
+} from "./collection";
+export type { Aliases, AliasOperations } from "./alias";
+export type { Overrides, OverrideOperations } from "./override";
+export type { Stopwords, StopwordOperations } from "./stopword";
+export type { AnalyticsRules, AnalyticsRuleOperations } from "./analytics/rules";
 export type { SearchResponse } from "./search";
