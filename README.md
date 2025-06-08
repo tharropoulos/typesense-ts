@@ -8,15 +8,8 @@
 
 &nbsp;
 
-<video
-autoPlay
-loop
-controls
-playsInline
-muted
-disablePictureInPicture
-src="https://github.com/user-attachments/assets/f32a6113-80a7-4e87-8222-16f550269555"
-/>
+https://github.com/user-attachments/assets/28955c3b-b3e9-4ded-bdc4-f0ca83eeef3d
+
 
 &nbsp;
 **Note**: Although I maintain both this library and the [main](https://github.com/typesense/typesense-js) client, this library is unofficial and a passion project. For official support, please refer to the [Typesense documentation](https://typesense.org/docs/).
