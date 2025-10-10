@@ -65,7 +65,7 @@ async function multisearch<const Searches extends readonly object[]>(
       const urlParams = new URLSearchParams(normalizeQueryParams(queryParams));
 
       return await makeRequest({
-        endpoint: `/multisearch?${urlParams.toString()}`,
+        endpoint: `/multi_search`,
         config: getConfiguration(config),
         method: "POST",
         body: searchParams,
