@@ -1,4 +1,5 @@
 import { configure } from "@/config";
+import { RequestError } from "@/error";
 import { collection } from "@/http/fetch";
 import { multisearch } from "@/http/fetch/multisearch";
 import { multisearchEntry } from "@/multisearch";
@@ -1007,6 +1008,60 @@ describe("multisearch tests", () => {
         expect(res_1).not.toHaveProperty("search_time_ms");
         expect(res_2.search_time_ms).toBeDefined();
       });
+    });
+  });
+  describe("query parameters", () => {
+    it("is successful when the number of searches equals limit_multi_searches", async () => {
+      const { results } = await multisearch(
+        {
+          searches: [
+            multisearchEntry({
+              collection: "multi_search_test_1",
+              q: "q",
+              query_by: ["foo"],
+            }),
+            multisearchEntry({
+              collection: "multi_search_test_2",
+              q: "q",
+              query_by: ["foo"],
+            }),
+          ],
+        },
+        config,
+        { limit_multi_searches: 2 },
+      );
+      expect(results.length).toEqual(2);
+    });
+    it("fails when the number of searches exceeds limit_multi_searches", async () => {
+      try {
+        await multisearch(
+          {
+            searches: [
+              multisearchEntry({
+                collection: "multi_search_test_1",
+                q: "q",
+                query_by: ["foo"],
+              }),
+              multisearchEntry({
+                collection: "multi_search_test_2",
+                q: "q",
+                query_by: ["foo"],
+              }),
+            ],
+          },
+          config,
+          { limit_multi_searches: 1 },
+        );
+
+        throw new Error("Expected multisearch to throw, but it did not");
+      } catch (error) {
+        expect(error).toBeInstanceOf(RequestError);
+        const reqError = error as RequestError;
+        expect(reqError.status).toBe(400);
+        expect(reqError.message).toContain(
+          "Number of multi searches exceeds `limit_multi_searches` parameter."
+        );
+      }
     });
   });
 });
