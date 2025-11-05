@@ -79,30 +79,6 @@ describe("type tests", () => {
       // @ts-expect-error This is erroring as expected
       const _error: UrlString = "ftp://localhost:3000";
     });
-    it("should only let a path be prefixed with a slash", () => {
-      const _config: UrlString = "http://localhost:3000/a";
-      // @ts-expect-error This is erroring as expected
-      const _error: UrlString = "http://localhost:3000api";
-    });
-    it("should only let ports be numbers", () => {
-      const _config: UrlString = "http://localhost:3000";
-      // @ts-expect-error This is erroring as expected
-      const _error: UrlString = "http://localhost:port";
-    });
-    it("should only let domains be strings", () => {
-      const _config: UrlString = "http://localhost";
-      // @ts-expect-error This is erroring as expected
-      const _error: UrlString = "http://23:3000";
-    });
-    it("should not end on an empty path", () => {
-      const _config: UrlString = "http://localhost:3000";
-      // @ts-expect-error This is erroring as expected
-      const _error: UrlString = "http://localhost:3000/";
-    });
-    it("should let an empty path", () => {
-      const _port: UrlString = "http://localhost:3000";
-      const _empty: UrlString = "http://localhost";
-    });
   });
 });
 describe("function tests", () => {

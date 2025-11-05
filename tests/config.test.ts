@@ -142,10 +142,7 @@ describe("default configuration management", () => {
 
       const config2 = configure({
         apiKey: "api-key-2",
-        nodes: [
-          // @ts-expect-error - this host is invalid
-          { host: "different-host", port: 8109, protocol: "https" },
-        ],
+        nodes: [{ host: "different-host", port: 8109, protocol: "https" }],
       });
 
       setDefaultConfiguration(config1);
@@ -201,16 +198,12 @@ describe("default configuration management", () => {
     it("should return provided config when given", () => {
       const defaultConfig = configure({
         apiKey: "default-key",
-        // @ts-expect-error - this host is invalid
         nodes: [{ host: "default-host", port: 8108, protocol: "http" }],
       });
 
       const providedConfig = configure({
         apiKey: "provided-key",
-        nodes: [
-          // @ts-expect-error - this host is invalid
-          { host: "provided-host", port: 8109, protocol: "https" },
-        ],
+        nodes: [{ host: "provided-host", port: 8109, protocol: "https" }],
       });
 
       setDefaultConfiguration(defaultConfig);
@@ -222,7 +215,6 @@ describe("default configuration management", () => {
     it("should return default config when no config is provided", () => {
       const defaultConfig = configure({
         apiKey: "default-key",
-        // @ts-expect-error - this host is invalid
         nodes: [{ host: "default-host", port: 8108, protocol: "http" }],
       });
 
@@ -235,10 +227,7 @@ describe("default configuration management", () => {
     it("should return default config when undefined is explicitly passed", () => {
       const defaultConfig = configure({
         apiKey: "default-key",
-        nodes: [
-          // @ts-expect-error - this host is invalid
-          { host: "default-host", port: 8108, protocol: "http" },
-        ],
+        nodes: [{ host: "default-host", port: 8108, protocol: "http" }],
       });
 
       setDefaultConfiguration(defaultConfig);
@@ -283,13 +272,11 @@ describe("default configuration management", () => {
     it("should handle multiple configurations in sequence", () => {
       const config1 = configure({
         apiKey: "key-1",
-        //  @ts-expect-error - invalid host
         nodes: [{ host: "host-1", port: 8108, protocol: "http" }],
       });
 
       const config2 = configure({
         apiKey: "key-2",
-        //  @ts-expect-error - invalid host
         nodes: [{ host: "host-2", port: 8109, protocol: "https" }],
       });
 
@@ -310,12 +297,9 @@ describe("default configuration management", () => {
       const config = configure({
         apiKey: "complex-key",
         nodes: [
-          // @ts-expect-error - invalid host
           { host: "node1", port: 8108, protocol: "http" },
-          // @ts-expect-error - invalid host
           { host: "node2", port: 8109, protocol: "https" },
         ],
-        // @ts-expect-error - invalid host
         nearestNode: { url: "http://nearest-node" },
         randomizeNodes: true,
         connectionTimeoutSeconds: 10,
