@@ -1,5 +1,5 @@
 type Protocol = "http" | "https";
-type Domain = `${string}.${string}` | `localhost`;
+type Domain = "localhost" | (string & {});
 type Port = `:${number}`;
 type Path = `/${string}${string}`;
 
