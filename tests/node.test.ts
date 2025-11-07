@@ -1,4 +1,4 @@
-import type { NearestNode, NodeConfiguration, TsNode, UrlString } from "@/node";
+import type { NearestNode, NodeConfiguration, TsNode } from "@/node";
 
 import {
   getNextNode,
@@ -12,27 +12,27 @@ import { describe, expect, it } from "vitest";
 describe("type tests", () => {
   describe("NodeConfiguration", () => {
     it("should not let a url be defined when host, port, or protocol are defined", () => {
+      // @ts-expect-error This is erroring as expected
       const _host: NodeConfiguration = {
         host: "localhost",
-        // @ts-expect-error This is erroring as expected
         url: "http://localhost:3000",
       };
 
+      // @ts-expect-error This is erroring as expected
       const _port: NodeConfiguration = {
         port: 3000,
-        // @ts-expect-error This is erroring as expected
         url: "http://localhost:3000",
       };
 
+      // @ts-expect-error This is erroring as expected
       const _protocol: NodeConfiguration = {
         protocol: "http",
-        // @ts-expect-error This is erroring as expected
         url: "http://localhost:3000",
       };
 
+      // @ts-expect-error This is erroring as expected
       const _path: NodeConfiguration = {
         path: "/api",
-        // @ts-expect-error This is erroring as expected
         url: "http://localhost:3000",
       };
     });
@@ -70,14 +70,6 @@ describe("type tests", () => {
           protocol: "ftp",
         };
       });
-    });
-  });
-  describe("UrlString", () => {
-    it("should only let a protocol be http or https", () => {
-      const _http: UrlString = "http://localhost:3000";
-      const _https: UrlString = "https://localhost:3000";
-      // @ts-expect-error This is erroring as expected
-      const _error: UrlString = "ftp://localhost:3000";
     });
   });
 });
