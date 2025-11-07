@@ -1,13 +1,9 @@
-type Protocol = "http" | "https";
 type Domain = "localhost" | (string & {});
-type Port = `:${number}`;
 type Path = `/${string}${string}`;
-
-type UrlString = `${Protocol}://${Domain}${Port | ""}${Path | ""}`;
 
 type NodeConfiguration =
   | {
-      url: UrlString;
+      url: (string & {}) | "http://localhost:8108";
       host?: never;
       port?: never;
       protocol?: never;
@@ -24,7 +20,7 @@ type NodeConfiguration =
 interface BaseNode {
   isHealthy: boolean;
   lastAccessTimestamp: number;
-  url: UrlString;
+  url: string;
 }
 
 interface TsNode extends BaseNode {
@@ -165,7 +161,7 @@ function initializeNodes({
   };
 }
 
-export type { NodeConfiguration, TsNode, NearestNode, UrlString };
+export type { NodeConfiguration, TsNode, NearestNode };
 
 export {
   nodeDueForHealthcheck,

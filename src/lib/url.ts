@@ -1,5 +1,3 @@
-import type { UrlString } from "@/node";
-
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
 function constructUrl({
@@ -7,7 +5,7 @@ function constructUrl({
   params,
   endpoint,
 }: {
-  baseUrl: UrlString;
+  baseUrl: string;
   params?: URLSearchParams;
   endpoint?: `/${string}`;
 }) {
