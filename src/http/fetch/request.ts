@@ -18,7 +18,10 @@ async function makeRequest<TBody, TReturn>({
 }: {
   config: Configuration;
   method: HttpMethod;
-  body?: TBody;
+  // `() => BodyInit` is a factory invoked per-attempt -- lets callers pass
+  // a `ReadableStream` (consumed on first try) while still preserving retry
+  // semantics on 5xx; see the streaming-JSONL body in `documents.import`.
+  body?: TBody | (() => BodyInit);
   params?: URLSearchParams;
   isImport?: boolean;
   endpoint?: `/${string}`;
@@ -35,15 +38,28 @@ async function makeRequest<TBody, TReturn>({
   const url = constructUrl({ baseUrl: node.node.url, params, endpoint });
 
   try {
-    const response = await fetch(url, {
+    const fetchBody =
+      isImport ?
+        typeof body === "function" ?
+          (body as () => BodyInit)()
+        : (body as BodyInit)
+      : JSON.stringify(body);
+    // Node 22+ (undici) requires `duplex: "half"` when sending a stream
+    // body. Cast because the type isn't in lib.dom yet; Workers/Deno/Bun
+    // either require or tolerate the same option.
+    const fetchInit: RequestInit & { duplex?: "half" } = {
       method,
       headers: {
         "Content-Type": isImport ? "text/plain" : "application/json",
         "X-TYPESENSE-API-KEY": config.apiKey,
         ...config.additionalHeaders,
       },
-      body: isImport ? (body as string) : JSON.stringify(body),
-    });
+      body: fetchBody,
+    };
+    if (fetchBody instanceof ReadableStream) {
+      fetchInit.duplex = "half";
+    }
+    const response = await fetch(url, fetchInit);
     const responseText = await response.text();
 
     if (response.ok) {
@@ -69,8 +85,12 @@ async function makeRequest<TBody, TReturn>({
     return makeRequest({
       method,
       config,
-      body: isImport ? body : JSON.stringify(body),
+      // Pass body unchanged -- if it's a factory, the recursive call will
+      // invoke it again to get a fresh stream for the retry.
+      body,
       params,
+      isImport,
+      endpoint,
       currentNodeIndex: node.nextIndex,
       attempt: attemptNum + 1,
     });

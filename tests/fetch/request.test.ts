@@ -176,6 +176,47 @@ describe("makeRequest", () => {
     ).rejects.toThrow("Network error");
   });
 
+  it("should stream a ReadableStream body when isImport and re-invoke factory on retry", async () => {
+    const nodes = [createNode(0, true), createNode(1, true)];
+
+    fetchMocker
+      .mockResponseOnce("Server Error", { status: 500 })
+      .mockResponseOnce('{"success":true}\n{"success":true}');
+
+    let factoryCalls = 0;
+    const bodyFactory = () => {
+      factoryCalls++;
+      return new ReadableStream<Uint8Array>({
+        pull(controller) {
+          controller.enqueue(new TextEncoder().encode('{"a":1}\n{"b":2}'));
+          controller.close();
+        },
+      });
+    };
+
+    const result = await makeRequest<unknown, unknown[]>({
+      method: "POST",
+      config: {
+        nodes,
+        apiKey: "test-key",
+        healthcheckIntervalSeconds: 1,
+        retryIntervalSeconds: 0,
+        numRetries: 3,
+      },
+      body: bodyFactory,
+      isImport: true,
+    });
+
+    expect(factoryCalls).toBe(2);
+    expect(fetchMocker.requests()).toHaveLength(2);
+    expect(result).toStrictEqual([{ success: true }, { success: true }]);
+
+    // Both attempts sent a ReadableStream body, not a string.
+    for (const call of fetchMocker.mock.calls) {
+      expect(call[1]?.body).toBeInstanceOf(ReadableStream);
+    }
+  });
+
   it("should use nearest node when healthy", async () => {
     const nodes = [createNode(0, false)];
     const nearestNode = createNearestNode(true);

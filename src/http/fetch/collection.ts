@@ -47,6 +47,30 @@ class DocumentImportError extends Error {
   }
 }
 
+// JSONL request body that stringifies one document at a time -- avoids the
+// O(N) intermediate string allocation of `docs.map(JSON.stringify).join("\n")`,
+// which OOMs on Workers / Edge runtimes for realistic vector-embedding-sized
+// imports. The trailing newline is omitted; Typesense ignores it either way.
+function createStreamingJsonlBody(
+  documents: readonly unknown[],
+): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+  let index = 0;
+  return new ReadableStream<Uint8Array>({
+    pull(controller) {
+      if (index >= documents.length) {
+        controller.close();
+        return;
+      }
+      const trailingNewline = index < documents.length - 1 ? "\n" : "";
+      controller.enqueue(
+        encoder.encode(JSON.stringify(documents[index]) + trailingNewline),
+      );
+      index++;
+    },
+  });
+}
+
 async function retrieveAllCollections(config?: Configuration): Promise<
   (OmitDefaultSortingField<Collection> & {
     created_at: number;
@@ -248,16 +272,17 @@ function collection<
           throw new Error("Cannot import empty array");
         }
 
-        const docsInJsonl = documents
-          .map((document) => JSON.stringify(document))
-          .join("\n");
-
         const result = await makeRequest({
           endpoint: `/collections/${encodeURIComponent(schema.name)}/documents/import`,
           config: getConfiguration(config),
           method: "POST",
           params,
-          body: docsInJsonl,
+          // Stream the JSONL body one doc at a time -- the previous
+          // `.map(JSON.stringify).join("\n")` buffers the entire payload in
+          // memory, OOM'ing in serverless runtimes (Workers / Edge) for
+          // realistic imports (e.g. 100 docs with 1536-dim embeddings).
+          // Wrapped in a factory so 5xx retries get a fresh stream.
+          body: () => createStreamingJsonlBody(documents),
           isImport: true,
         });
 
@@ -289,9 +314,9 @@ function collection<
     },
     schema: collectionSchema,
     infer: collectionSchema.fields as InferNativeType<
-      typeof collectionSchema.fields extends CollectionField<string, string>[]
-        ? typeof collectionSchema.fields
-        : never
+      typeof collectionSchema.fields extends CollectionField<string, string>[] ?
+        typeof collectionSchema.fields
+      : never
     >,
 
     async create(options?: CollectionCreateOptions, config?: Configuration) {
