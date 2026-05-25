@@ -277,11 +277,6 @@ function collection<
           config: getConfiguration(config),
           method: "POST",
           params,
-          // Stream the JSONL body one doc at a time -- the previous
-          // `.map(JSON.stringify).join("\n")` buffers the entire payload in
-          // memory, OOM'ing in serverless runtimes (Workers / Edge) for
-          // realistic imports (e.g. 100 docs with 1536-dim embeddings).
-          // Wrapped in a factory so 5xx retries get a fresh stream.
           body: () => createStreamingJsonlBody(documents),
           isImport: true,
         });
