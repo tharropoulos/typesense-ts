@@ -265,6 +265,9 @@ type FilterTokenizer<
         >
     : Head extends NumericValue ?
       FilterTokenizer<ReadNum<T>[1], Schema, [...Acc, NumToken<ReadNum<T>[0]>]>
+    : Head extends `${number}` | `${bigint}` ?
+      // Handle an interpolated number, e.g. a runtime value in `field:=${n}`
+      FilterTokenizer<Tail, Schema, [...Acc, NumToken<Head>]>
     : `Unknown token: ${Head}`
   : T extends keyof TokenMap ?
     // Handle case when the last token is a symbol (e.g. "&&")

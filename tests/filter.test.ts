@@ -274,6 +274,96 @@ describe("FilterTokenizer tests", () => {
       FilterTokenizer<"age != 20", typeof _usersSchema>
     >().toEqualTypeOf<"Unknown token: !">();
   });
+
+  it("should tokenize a `${number}` interpolation as a num token", () => {
+    expectTypeOf<
+      FilterTokenizer<`age:=${number}`, typeof _usersSchema>
+    >().toEqualTypeOf<[Ident<"age", "int32">, ":=", NumToken<`${number}`>]>();
+  });
+
+  it("should tokenize a `${number}` interpolation followed by a clause", () => {
+    expectTypeOf<
+      FilterTokenizer<`age:=${number} && name:John`, typeof _usersSchema>
+    >().toEqualTypeOf<
+      [
+        Ident<"age", "int32">,
+        ":=",
+        NumToken<`${number}`>,
+        "&&",
+        Ident<"name", "string">,
+        ":",
+        LiteralToken<"John">,
+      ]
+    >();
+  });
+
+  it("should tokenize `${number}` interpolations inside a range", () => {
+    expectTypeOf<
+      FilterTokenizer<`age:[${number}..${number}]`, typeof _usersSchema>
+    >().toEqualTypeOf<
+      [
+        Ident<"age", "int32">,
+        ":[",
+        NumToken<`${number}`>,
+        "..",
+        NumToken<`${number}`>,
+        "]",
+      ]
+    >();
+  });
+
+  it("should tokenize a `${bigint}` interpolation as a num token", () => {
+    expectTypeOf<
+      FilterTokenizer<`age:=${bigint}`, typeof _usersSchema>
+    >().toEqualTypeOf<[Ident<"age", "int32">, ":=", NumToken<`${bigint}`>]>();
+  });
+
+  it("should still tokenize literal numbers with their exact value", () => {
+    expectTypeOf<
+      FilterTokenizer<"age:=20", typeof _usersSchema>
+    >().toEqualTypeOf<[Ident<"age", "int32">, ":=", NumToken<"20">]>();
+  });
+});
+
+describe("ParseFilter with runtime `${number}` values", () => {
+  it("should accept a runtime numeric value with `:=`", () => {
+    expectTypeOf<
+      ParseFilter<`age:=${number}`, typeof _usersSchema>
+    >().toEqualTypeOf<true>();
+  });
+
+  it("should accept a runtime numeric value with comparison operators", () => {
+    expectTypeOf<
+      ParseFilter<`age:>${number}`, typeof _usersSchema>
+    >().toEqualTypeOf<true>();
+    expectTypeOf<
+      ParseFilter<`age:<${number}`, typeof _usersSchema>
+    >().toEqualTypeOf<true>();
+  });
+
+  it("should accept a runtime numeric value inside an array", () => {
+    expectTypeOf<
+      ParseFilter<`age:[${number}]`, typeof _usersSchema>
+    >().toEqualTypeOf<true>();
+  });
+
+  it("should accept a runtime numeric range", () => {
+    expectTypeOf<
+      ParseFilter<`age:[${number}..${number}]`, typeof _usersSchema>
+    >().toEqualTypeOf<true>();
+  });
+
+  it("should accept a runtime numeric value followed by another clause", () => {
+    expectTypeOf<
+      ParseFilter<`age:=${number} && name:John`, typeof _usersSchema>
+    >().toEqualTypeOf<true>();
+  });
+
+  it("should accept a runtime bigint value", () => {
+    expectTypeOf<
+      ParseFilter<`age:=${bigint}`, typeof _usersSchema>
+    >().toEqualTypeOf<true>();
+  });
 });
 
 describe("IsNextTokenValid type tests", () => {
