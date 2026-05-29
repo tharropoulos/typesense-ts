@@ -388,15 +388,25 @@ type ArraySearchParams<
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   > extends any[] | TupleOfLength<any> ?
     K
-  : NonNullable<
-    SearchParams<Schema, FilterBy, SortBy, Q, CollectionName, QueryByTuple>[K]
-  > extends infer T ?
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    T extends TupleOfLength<any, any> ? K
-    : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    T extends TupleOfLength<any, any> ? K
-    : never
-  : never;
+  : // Also catch unions with an array member (e.g. `"none" | string[]`)
+  [
+    Extract<
+      NonNullable<
+        SearchParams<
+          Schema,
+          FilterBy,
+          SortBy,
+          Q,
+          CollectionName,
+          QueryByTuple
+        >[K]
+      >,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      readonly any[]
+    >,
+  ] extends [never] ?
+    never
+  : K;
 }[keyof SearchParams<
   Schema,
   FilterBy,
@@ -421,6 +431,7 @@ const ARRAY_KEYS = {
   num_typos: true,
   facet_return_parent: true,
   stopwords: true,
+  highlight_full_fields: true,
 } as const satisfies Record<NonNullable<ArraySearchParams>, true>;
 
 interface BaseHighlightV1<T extends CollectionField> {
