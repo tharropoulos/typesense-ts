@@ -2,6 +2,8 @@ import type { NearestNode, NodeConfiguration, TsNode } from "@/node";
 
 import { initializeNodes } from "@/node";
 
+import type { MakeRequestInit } from "@/http/fetch/request";
+
 interface BaseConfiguration {
   apiKey: string;
   randomizeNodes?: boolean;
@@ -12,6 +14,10 @@ interface BaseConfiguration {
   retryIntervalSeconds?: number;
   sendApiKeyAsQueryParam?: boolean;
   additionalHeaders?: Record<string, string>;
+  fetch?: {
+    fn?: typeof fetch;
+    init?: MakeRequestInit;
+  }
 }
 
 type MakeKeysRequired<T, K extends keyof T> = T & {
