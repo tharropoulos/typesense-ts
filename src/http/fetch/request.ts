@@ -69,8 +69,10 @@ async function makeRequest<TBody, TReturn>({
     return makeRequest({
       method,
       config,
-      body: isImport ? body : JSON.stringify(body),
+      body,
       params,
+      endpoint,
+      isImport,
       currentNodeIndex: node.nextIndex,
       attempt: attemptNum + 1,
     });

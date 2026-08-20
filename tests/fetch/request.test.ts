@@ -87,6 +87,68 @@ describe("makeRequest", () => {
     expect(urls[1].searchParams.get("q")).toBe("query");
   });
 
+  it("should keep the endpoint and body when retrying after a 5xx", async () => {
+    const nodes = [createNode(0, true), createNode(1, true)];
+
+    fetchMocker
+      .mockResponseOnce("Server Error", { status: 500 })
+      .mockResponseOnce(JSON.stringify({ data: "success" }));
+
+    await makeRequest({
+      method: "POST",
+      endpoint: "/collections",
+      config: {
+        nodes,
+        apiKey: "test-key",
+        healthcheckIntervalSeconds: 1,
+        retryIntervalSeconds: 0,
+        numRetries: 3,
+      },
+      body: { test: "data" },
+    });
+
+    expect(fetchMocker.requests()).toHaveLength(2);
+    expect(new URL(fetchMocker.requests()[1]!.url).pathname).toBe(
+      "/collections",
+    );
+    expect(fetchMocker.mock.calls[1]?.[1]?.body).toBe(
+      JSON.stringify({ test: "data" }),
+    );
+  });
+
+  it("should keep the import body and content type when retrying after a 5xx", async () => {
+    const nodes = [createNode(0, true), createNode(1, true)];
+    const importBody = `${JSON.stringify({ id: "1" })}\n${JSON.stringify({ id: "2" })}`;
+
+    fetchMocker
+      .mockResponseOnce("Server Error", { status: 500 })
+      .mockResponseOnce(JSON.stringify({ success: true }));
+
+    await makeRequest({
+      method: "POST",
+      endpoint: "/collections/test/documents/import",
+      isImport: true,
+      config: {
+        nodes,
+        apiKey: "test-key",
+        healthcheckIntervalSeconds: 1,
+        retryIntervalSeconds: 0,
+        numRetries: 3,
+      },
+      body: importBody,
+    });
+
+    expect(fetchMocker.requests()).toHaveLength(2);
+    expect(new URL(fetchMocker.requests()[1]!.url).pathname).toBe(
+      "/collections/test/documents/import",
+    );
+    const retryInit = fetchMocker.mock.calls[1]?.[1];
+    expect(retryInit?.body).toBe(importBody);
+    expect((retryInit?.headers as Record<string, string>)["Content-Type"]).toBe(
+      "text/plain",
+    );
+  });
+
   it("should throw RequestError immediately on 4xx error", async () => {
     const nodes = [createNode(0, true)];
 
